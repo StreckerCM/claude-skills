@@ -127,6 +127,46 @@ After all sub-agents complete:
 3. If all personas report clean passes, indicate the review is complete
 4. If any personas found issues, list the outstanding items
 
+### Step 2: Save review to memory
+
+After outputting the summary, save a persistent record so future sessions can reference it. Write a memory file to the project's `.claude/memory/` directory:
+
+**File:** `.claude/memory/review_<branch-name-slugified>.md`
+
+```markdown
+---
+name: persona-review-<branch>
+description: "Persona review results for <branch> (PR #<pr-number>) — <date>"
+type: project
+---
+
+## Persona Review: <branch>
+**Date:** <YYYY-MM-DD>
+**PR:** #<pr-number>
+**Stack:** <detected stack>
+**Recommendation:** <merge recommendation>
+
+### Results
+| Persona | Status | Key Findings |
+|---------|--------|-------------|
+| ... | ... | ... |
+
+### Action Items (before merge)
+- <item 1>
+- <item 2>
+
+### Action Items (after merge / non-blocking)
+- <item 1>
+- <item 2>
+```
+
+Then add an entry to `.claude/memory/MEMORY.md` (create if it doesn't exist):
+```
+- [Review: <branch>](review_<branch-name-slugified>.md) — <recommendation>, <date>
+```
+
+If a previous review memory exists for the same branch, **update it** rather than creating a duplicate.
+
 ## Error Handling
 
 - If stack detection fails (returns "unknown"), ask the user to specify `--stack` manually
