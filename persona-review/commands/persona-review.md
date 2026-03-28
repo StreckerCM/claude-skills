@@ -1,20 +1,6 @@
 ---
-name: persona-review
 description: "Run a technology-aware persona review on the current branch. Auto-detects stack and launches specialized sub-agent reviewers."
-user_invocable: true
-arguments:
-  - name: branch
-    description: "Branch or PR to review (default: current branch)"
-    required: false
-  - name: --stack
-    description: "Override auto-detected stack (dotnet-desktop, dotnet-library, aspnet-web, nodejs-api, static-site, salesforce, python-tools)"
-    required: false
-  - name: --overlay
-    description: "Add a review overlay (scientific-computing)"
-    required: false
-  - name: --rotation
-    description: "Override rotation size (4 or 6)"
-    required: false
+argument-hint: "[branch] [--stack <stack>] [--overlay <overlay>] [--rotation <size>]"
 ---
 
 # Persona Review Skill
