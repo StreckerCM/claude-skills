@@ -131,7 +131,7 @@ After all sub-agents complete:
 
 After outputting the summary, save a persistent record so future sessions can reference it. Write a memory file to the project's `.claude/memory/` directory:
 
-**File:** `.claude/memory/review_<branch-name-slugified>.md`
+**File:** `.claude/memory/review_<branch-name-slugified>_<YYYYMMDD-HHmm>.md`
 
 ```markdown
 ---
@@ -162,10 +162,8 @@ type: project
 
 Then add an entry to `.claude/memory/MEMORY.md` (create if it doesn't exist):
 ```
-- [Review: <branch>](review_<branch-name-slugified>.md) — <recommendation>, <date>
+- [Review: <branch>](review_<branch-name-slugified>_<YYYYMMDD-HHmm>.md) — <recommendation>, <date>
 ```
-
-If a previous review memory exists for the same branch, **update it** rather than creating a duplicate.
 
 ## Error Handling
 
