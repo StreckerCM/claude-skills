@@ -1,0 +1,15 @@
+{
+  "name": "strecker-skills",
+  "owner": {
+    "name": "StreckerCM",
+    "url": "https://github.com/StreckerCM"
+  },
+  "plugins": [
+    {
+      "name": "persona-review",
+      "source": "./persona-review",
+      "description": "Technology-aware persona review system. Auto-detects project stack and runs tailored code reviews through specialized sub-agent personas.",
+      "version": "1.0.0"
+    }
+  ]
+}
