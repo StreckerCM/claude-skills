@@ -53,7 +53,7 @@ Or interactively:
 
 1. **Detects** your project's technology stack from project files (`.sln`, `package.json`, `sfdx-project.json`, etc.)
 2. **Loads** a technology-specific profile with tailored review criteria per persona
-3. **Launches** each persona as an independent sub-agent with fresh context
+3. **Reads** agent templates and injects fully-rendered prompts into each sub-agent (sub-agents get fresh context with no plugin access)
 4. **Parallelizes** where possible (Implementer, Reviewer, Tester, Security run concurrently)
 5. **Project Manager** runs last to summarize all findings
 
@@ -81,6 +81,19 @@ Or interactively:
 | Security Auditor | Opus | Vulnerability detection, input validation, secrets |
 | Project Manager | Haiku | Requirements tracking, progress, risk assessment |
 
+## Plugin Structure
+
+```
+persona-review/
+  .claude-plugin/plugin.json              # Plugin manifest
+  skills/persona-review/
+    SKILL.md                              # Main skill (orchestrator)
+    scripts/detect-stack.sh               # Stack detection script
+    references/
+      agents/                             # Persona agent templates (6)
+      profiles/                           # Stack-specific review profiles (8)
+```
+
 ## Profiles
 
 Each profile defines:
@@ -89,4 +102,4 @@ Each profile defines:
 - Build/test commands
 - Framework-specific patterns to check
 
-See `profiles/` for all profile definitions.
+See `skills/persona-review/references/profiles/` for all profile definitions.
