@@ -12,10 +12,26 @@ PROJECT_DIR="${PROJECT_DIR//\\//}"
 
 # --- Helper functions ---
 
+# Directories that hold code the project did not write. Scanning them produces
+# false positives: numpy inside .venv/Lib/site-packages is a transitive
+# dependency of half the Python ecosystem, not evidence of scientific computing.
+PRUNE=(
+  -name .git -o -name .venv -o -name venv -o -name env
+  -o -name node_modules -o -name site-packages -o -name __pycache__
+  -o -name .tox -o -name .mypy_cache -o -name .pytest_cache
+  -o -name bin -o -name obj -o -name dist -o -name build
+  -o -name packages -o -name vendor -o -name .superpowers
+)
+
+# find, with vendor directories pruned before any test is applied.
+find_pruned() {
+  local depth="$1"; shift
+  find "$PROJECT_DIR" -maxdepth "$depth" \( "${PRUNE[@]}" \) -prune -o "$@" 2>/dev/null
+}
+
 has_file() {
   local pattern="$1"
-  # Use find with maxdepth to avoid deep traversal
-  find "$PROJECT_DIR" -maxdepth 3 -name "$pattern" -print -quit 2>/dev/null | grep -q .
+  find_pruned 3 -name "$pattern" -print -quit | grep -q .
 }
 
 has_file_shallow() {
@@ -31,7 +47,7 @@ has_dir() {
 file_contains() {
   local pattern="$1"
   local glob="$2"
-  find "$PROJECT_DIR" -maxdepth 3 -name "$glob" -exec grep -l "$pattern" {} + 2>/dev/null | head -1 | grep -q .
+  find_pruned 3 -name "$glob" -exec grep -l "$pattern" {} + | head -1 | grep -q .
 }
 
 package_has_dep() {
