@@ -56,6 +56,13 @@ has_dir() {
   [ -d "$PROJECT_DIR/$dir" ]
 }
 
+# Salesforce metadata directories sit under force-app/main/default and other
+# package directories, so their depth varies by project layout.
+has_dir_anywhere() {
+  local dir="$1"
+  find_pruned 6 -type d -name "$dir" -print -quit | grep -q .
+}
+
 file_contains() {
   local pattern="$1"
   local glob="$2"
@@ -144,6 +151,17 @@ elif has_file_shallow "requirements.txt" || has_file_shallow "pyproject.toml" ||
 # Fallback
 else
   STACK="unknown"
+fi
+
+# --- Experience Cloud overlay detection (Salesforce only) ---
+
+# An Experience Cloud site puts org data on the public internet, so it carries
+# a security surface no internal-only org has. Detect it rather than taxing
+# every Salesforce review with guest-user criteria that do not apply.
+if [ "$STACK" = "salesforce" ]; then
+  if has_dir_anywhere "experiences" || has_dir_anywhere "networks"; then
+    OVERLAY="experience-cloud"
+  fi
 fi
 
 # --- Scientific computing overlay detection ---

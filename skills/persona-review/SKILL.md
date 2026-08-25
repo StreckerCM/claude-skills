@@ -41,8 +41,8 @@ All are optional.
 | `--no-fix` | Stop after the fix plan. Report only. |
 
 Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
-`static-site`, `salesforce`, `python-tools`. Valid overlay:
-`scientific-computing`.
+`static-site`, `salesforce`, `python-tools`. Valid overlays:
+`scientific-computing`, and `experience-cloud` for Salesforce.
 
 `--rounds` above 1 requires `--fix`. Reviewing unchanged code a second time
 returns the same findings, so a round without a fix phase is wasted work.

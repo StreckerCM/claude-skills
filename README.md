@@ -14,8 +14,9 @@ Manager.
 
 Supported stacks: .NET Desktop (WPF, WinForms), .NET libraries and NuGet
 packages, ASP.NET web, Node.js and Express APIs, static sites (Astro, Eleventy),
-Salesforce (Apex, LWC), and Python tools. Scientific computing is available as
-an overlay on top of any of those.
+Salesforce (Apex, LWC, Flow), and Python tools. Two overlays add criteria on
+top of a detected stack: scientific computing, and Experience Cloud for
+Salesforce orgs that ship a public site.
 
 ```
 /persona-review feature/123-my-branch
