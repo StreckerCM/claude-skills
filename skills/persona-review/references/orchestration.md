@@ -274,7 +274,13 @@ A fix key identifies one defect across rounds and across runs:
 ```
 
 Slug the title by lowercasing it, replacing every run of non-alphanumeric
-characters with a hyphen, and trimming to 60 characters.
+characters with a hyphen, trimming to 60 characters, and then stripping any
+leading or trailing hyphen. Trimming lands mid-word often enough that the strip
+matters: without it the same title yields a different key depending on where the
+cut falls.
+
+Use the fix item's `title`, not the issue title. The issue title carries a
+`FIX-N:` prefix, and that number is renumbered every run.
 
 The key is built from the branch and the title, **never from the `FIX-N` id**.
 Ids are renumbered on every run, so an id-based key would treat the same defect
