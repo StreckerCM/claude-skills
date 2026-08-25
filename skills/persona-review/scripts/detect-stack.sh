@@ -39,6 +39,18 @@ has_file_shallow() {
   find "$PROJECT_DIR" -maxdepth 1 -name "$pattern" -print -quit 2>/dev/null | grep -q .
 }
 
+# Case-insensitive name probe. .NET and Salesforce use PascalCase, so a
+# case-sensitive -name misses Coordinate.cs and Projections/ entirely, which
+# made the filename rules below dead for those stacks.
+#
+# -mindepth 1 keeps the repository's own directory out of the match: a repo
+# checked out into a folder called Survey should not be classified by that.
+has_file_iname() {
+  local pattern="$1"
+  find "$PROJECT_DIR" -mindepth 1 -maxdepth 3 \( "${PRUNE[@]}" \) -prune -o \
+    -iname "$pattern" -print -quit 2>/dev/null | grep -q .
+}
+
 has_dir() {
   local dir="$1"
   [ -d "$PROJECT_DIR/$dir" ]
@@ -48,6 +60,18 @@ file_contains() {
   local pattern="$1"
   local glob="$2"
   find_pruned 3 -name "$glob" -exec grep -l "$pattern" {} + | head -1 | grep -q .
+}
+
+# Windows system libraries. P/Invoke into these is ordinary desktop plumbing:
+# console windows, window handles, the registry. It says nothing about the
+# domain. Only interop with a non-system library suggests a native
+# computational core, which is what the overlay is trying to find.
+SYSTEM_DLLS='kernel32|user32|advapi32|shell32|gdi32|oleaut32|ole32|comctl32|comdlg32|ws2_32|winmm|dwmapi|uxtheme|psapi|version|crypt32|secur32|setupapi|iphlpapi|netapi32|wintrust|userenv|winspool|imm32|dbghelp|ntdll|msvcrt'
+
+has_nonsystem_interop() {
+  local glob="$1" pattern="$2"
+  find_pruned 3 -name "$glob" -exec grep -h "$pattern" {} + 2>/dev/null \
+    | grep -viE "\"($SYSTEM_DLLS)" | grep -q .
 }
 
 package_has_dep() {
@@ -134,18 +158,27 @@ if [ "$STACK" != "unknown" ] && [ "$STACK" != "salesforce" ] && [ "$STACK" != "s
     SCIENTIFIC=true
   fi
 
-  # Check for geospatial/scientific keywords in file names
+  # Check for geospatial and scientific domain terms in file names.
+  #
+  # These are deliberately specific. Bare *geo* and *mag* look reasonable and
+  # are not: *mag* matches images, og-image.png, and image-loader.js, so every
+  # web project with an assets folder was classified as scientific computing.
   if ! $SCIENTIFIC; then
-    if has_file "*geo*" || has_file "*mag*" || has_file "*survey*" || \
-       has_file "*trajectory*" || has_file "*coordinate*" || has_file "*projection*"; then
-      SCIENTIFIC=true
-    fi
+    for term in geomag magnetic geodetic geodes survey trajectory \
+                coordinate projection ellipsoid datum; do
+      if has_file_iname "*${term}*"; then
+        SCIENTIFIC=true
+        break
+      fi
+    done
   fi
 
-  # Check for native interop (common in scientific computing)
+  # Check for native interop into a non-system library. A bare DllImport is
+  # not a signal: kernel32 and user32 appear in ordinary Windows apps that
+  # have nothing to do with scientific computing.
   if ! $SCIENTIFIC; then
-    if file_contains "DllImport" "*.cs" 2>/dev/null || \
-       file_contains "ctypes" "*.py" 2>/dev/null; then
+    if has_nonsystem_interop "*.cs" "DllImport" || \
+       has_nonsystem_interop "*.py" "ctypes"; then
       SCIENTIFIC=true
     fi
   fi
