@@ -3,8 +3,8 @@ name: static-site
 display_name: "Static Site (Astro / Eleventy)"
 build_command: "npm run build"
 test_command: ""
-rotation_size: 4
-personas: [implementer, reviewer, ui-ux-designer, project-manager]
+rotation_size: 3
+personas: [implementer, reviewer, ui-ux-designer]
 ---
 
 # Static Site Review Profile

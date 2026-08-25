@@ -3,8 +3,8 @@ name: aspnet-web
 display_name: "ASP.NET Web Application"
 build_command: "dotnet build *.sln"
 test_command: "dotnet test *.sln"
-rotation_size: 6
-personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor, project-manager]
+rotation_size: 5
+personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor]
 ---
 
 # ASP.NET Web Review Profile

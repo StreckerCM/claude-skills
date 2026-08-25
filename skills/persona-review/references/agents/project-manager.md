@@ -64,7 +64,7 @@ every critical and normally every high.
 
 ## Review Process
 
-1. Read the branch changes: `git diff main...HEAD`.
+1. Read the branch changes: `git diff {{BASE_BRANCH}}...HEAD`.
 2. Read every findings block the orchestrator gave you.
 3. Check whether `docs/features/*/tasks.md` exists and is current.
 4. Merge and de-duplicate as described above.

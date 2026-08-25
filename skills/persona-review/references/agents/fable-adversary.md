@@ -55,7 +55,7 @@ noisy costs the user's trust in this lens.
 
 ## Process
 
-1. Read the full diff: `git diff main...HEAD`.
+1. Read the full diff: `git diff {{BASE_BRANCH}}...HEAD`.
 2. For each changed function, identify every input it does not control:
    parameters, config, database state, clock, filesystem, network, other
    threads.

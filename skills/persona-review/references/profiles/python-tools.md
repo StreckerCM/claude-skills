@@ -45,3 +45,11 @@ personas: [implementer, reviewer, tester, security-auditor]
 - Pickle/eval: no deserialization of untrusted data
 - Temporary files: use tempfile module with proper permissions
 - YAML loading: use yaml.safe_load, never yaml.load without Loader
+
+## Project Manager Criteria
+- CLI argument or behaviour changes are documented in the README and the tool's help text
+- Changelog or release notes updated for user-visible behaviour
+- Dependency changes reflected in requirements.txt or pyproject.toml, with justified version bounds
+- Supported Python versions stated and matched by the packaging metadata
+- Migration or upgrade steps recorded when input or output formats change
+- Any generated artifact or report format change is called out for downstream consumers

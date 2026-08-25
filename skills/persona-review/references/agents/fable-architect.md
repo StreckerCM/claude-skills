@@ -45,7 +45,7 @@ was wasted.
 
 ## Process
 
-1. Read the full diff: `git diff main...HEAD`.
+1. Read the full diff: `git diff {{BASE_BRANCH}}...HEAD`.
 2. Read the surrounding modules, not only the changed files. Your findings live
    in the relationships between them, so the diff alone cannot show you enough.
 3. Read enough git history to know whether a pattern here is established or new.

@@ -24,6 +24,7 @@ an overlay on top of any of those.
 /persona-review feature/123-my-branch --rotation 4
 /persona-review feature/123-my-branch --fable      # add three deep lenses
 /persona-review feature/123-my-branch --fix        # apply the fix plan
+/persona-review --repo E:/GitHub/OtherProject      # review a different repo
 ```
 
 Every argument is optional. With none, the skill reviews the current branch,

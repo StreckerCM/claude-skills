@@ -23,13 +23,19 @@ For each reviewer in the rotation:
    such as `## Implementer Criteria`.
 3. If an overlay is active, extract the same section from the overlay profile.
 4. Replace the `{{STACK_CRITERIA}}` placeholder with the criteria from step 2.
-5. Assemble the prompt below.
+5. Replace every `{{BASE_BRANCH}}` placeholder with the base branch resolved in
+   Phase 1. Templates carry the placeholder rather than a literal `main`,
+   because a wrong base yields an empty diff that looks like a clean review.
+6. Assemble the prompt below.
 
-The three `--fable` lenses skip steps 2 through 4. Their templates carry no
-placeholder and take no stack criteria.
+The three `--fable` lenses skip steps 2 through 4: they take no stack criteria.
+They still need step 5, because they diff the branch like every other reviewer.
 
 ```
-You are performing a persona review on branch: <branch>
+You are performing a persona review.
+Repository: <absolute repo path> — run every git and build command against it.
+Branch: <branch>
+Base branch: <base-branch>
 PR: #<pr-number>            (omit this line if there is no PR)
 Build command: <build_command>
 Test command: <test_command>
@@ -41,7 +47,7 @@ Test command: <test_command>
                             (omit this section if no overlay is active)
 
 ## Instructions
-1. Run `git diff main...HEAD` to see every change on this branch.
+1. Run `git diff <base-branch>...HEAD` to see every change on this branch.
 2. Review the changes against your criteria above.
 3. Run the build command and confirm the project builds.
 4. Run the test command, if one is defined.
@@ -79,7 +85,7 @@ One agent, after every reviewer finishes.
 <persona names that failed or were not in the rotation>
 
 ## Instructions
-1. Run `git diff main...HEAD` for context.
+1. Run `git diff <base-branch>...HEAD` for context.
 2. Merge and de-duplicate the findings above.
 3. Assign a file scope and a group number to every fix item. Items sharing any
    file must share a group.
@@ -102,7 +108,10 @@ Record the base commit before launching: `git rev-parse HEAD`.
 One agent per group, launched concurrently:
 
 ```
-You are applying fixes on branch: <branch>
+You are applying fixes.
+Repository: <absolute repo path> — run every git and build command against it.
+Branch: <branch>
+Base branch: <base-branch>
 Build command: <build_command>
 Test command: <test_command>
 
@@ -125,6 +134,7 @@ duplication is possible.
 ```
 <full text of references/agents/consolidator.md>
 
+Repository: <absolute repo path>
 Base commit before the fixes: <sha>
 
 ## What the Implementers reported
@@ -136,7 +146,8 @@ Base commit before the fixes: <sha>
 <...>
 
 ## Instructions
-1. Run `git diff <sha>...HEAD` to see everything the Implementers changed.
+1. Run `git diff <sha>...HEAD` in the repository to see everything the
+   Implementers changed.
 2. Compare the new-shared entries across groups. That is where two agents
    writing the same thing twice shows up.
 3. Consolidate real duplicates. Report near-misses you deliberately kept.

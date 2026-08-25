@@ -3,8 +3,8 @@ name: dotnet-desktop
 display_name: ".NET Desktop (WPF/WinForms)"
 build_command: "dotnet build *.sln"
 test_command: "dotnet test *.sln"
-rotation_size: 6
-personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor, project-manager]
+rotation_size: 5
+personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor]
 ---
 
 # .NET Desktop Review Profile

@@ -4,7 +4,7 @@ display_name: ".NET Library / NuGet Package"
 build_command: "dotnet build *.sln"
 test_command: "dotnet test *.sln"
 rotation_size: 4
-personas: [implementer, reviewer, tester, project-manager]
+personas: [implementer, reviewer, tester, security-auditor]
 ---
 
 # .NET Library Review Profile
@@ -35,6 +35,15 @@ personas: [implementer, reviewer, tester, project-manager]
 - Test public API contracts, not internal implementation
 - Verify backward compatibility with previous test baselines
 - Performance regression tests for critical paths
+
+## Security Auditor Criteria
+- Native interop safety: validate buffer sizes and struct layouts in P/Invoke, never trust a native return length
+- Deserialization of untrusted input: reject unbounded object graphs and unexpected types
+- Path handling: reject traversal sequences in any API that accepts a file path
+- Public API input validation: a library cannot assume its caller validated anything
+- No hardcoded secrets, keys, or connection strings, including in test fixtures
+- Dependency vulnerabilities: check transitive packages against known advisories
+- Exception messages must not leak paths, connection details, or internal state to callers
 
 ## Project Manager Criteria
 - SemVer compliance: major for breaking, minor for features, patch for fixes

@@ -13,7 +13,7 @@ You are the **IMPLEMENTER** persona (#5) performing a code review on this branch
 - Ensure clean, maintainable code
 
 ## Review Process
-1. Read the PR diff or branch changes (`git diff main...HEAD`)
+1. Read the PR diff or branch changes (`git diff {{BASE_BRANCH}}...HEAD`)
 2. Identify all modified/added files
 3. For each file, check against the stack-specific criteria below
 4. Run the build command to verify compilation
@@ -36,9 +36,6 @@ Post a PR comment using `gh pr comment` with this structure:
 ### Findings
 - [Finding 1 - issue found or observation]
 - [Finding 2]
-
-### Changes Made
-- [If any fixes were applied: file:line - description]
 
 ### Build Status
 - [ ] Build succeeds

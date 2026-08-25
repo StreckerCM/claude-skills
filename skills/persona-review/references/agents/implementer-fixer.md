@@ -49,7 +49,7 @@ defect at a smaller scale. Route through the accessor.
 
 ## Process
 
-1. Read the diff for context: `git diff main...HEAD`.
+1. Read the diff for context: `git diff {{BASE_BRANCH}}...HEAD`.
 2. For each item in your assignment, read the files in its `scope` in full, not
    just the diffed lines.
 3. Apply the fix as the plan describes it. If the described fix is wrong, apply

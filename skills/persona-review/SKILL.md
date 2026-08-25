@@ -30,6 +30,7 @@ All are optional.
 | Argument | Effect |
 |---|---|
 | `<branch>` | Review this branch. Default: the current branch. |
+| `--repo <path>` | Review this repository. Default: the working directory. |
 | `--stack <stack>` | Skip detection and use this stack. |
 | `--overlay <overlay>` | Add overlay criteria on top of the detected stack. |
 | `--rotation <size>` | Run this many reviewers instead of the profile default. |
@@ -46,15 +47,38 @@ deep or Fable review in words.
 
 ## Phase 1: Detect and load
 
-1. **Resolve the branch.** Use the branch argument if given, otherwise
-   `git branch --show-current`. Get the PR number with
+1. **Resolve the repository.** Use `--repo <path>` if given, otherwise the
+   working directory. Everything below runs against it, so use `git -C <repo>`
+   rather than changing directory. Confirm it is a git repository before going
+   further.
+
+   Pass the absolute repository path into every sub-agent prompt. Sub-agents do
+   not inherit your working directory, and a reviewer that runs `git diff` in
+   the wrong place reports a clean pass on an empty diff.
+
+2. **Resolve the branch.** Use the branch argument if given, otherwise
+   `git -C <repo> branch --show-current`. Get the PR number with
    `gh pr list --head <branch> --json number --jq '.[0].number'`. An empty
    result means no PR exists.
 
-2. **Detect the stack.** If `--stack` was given, use it. Otherwise run:
+3. **Resolve the base branch.** Never assume `main`:
 
    ```bash
-   bash ~/.claude/skills/persona-review/scripts/detect-stack.sh .
+   bash ~/.claude/skills/persona-review/scripts/detect-base.sh <repo>
+   ```
+
+   The script prefers the remote's declared default branch, then falls back to
+   whichever of `main`, `master`, `trunk`, `develop`, or `development` exists. A
+   wrong base produces an empty diff, and an empty diff reads as a clean review.
+
+   If it prints `unknown`, or if `git -C <repo> diff --name-only <base>...HEAD`
+   is empty, stop and ask the user for the base branch. Do not review nothing
+   and call it clean.
+
+4. **Detect the stack.** If `--stack` was given, use it. Otherwise run:
+
+   ```bash
+   bash ~/.claude/skills/persona-review/scripts/detect-stack.sh <repo>
    ```
 
    The script prints one line, such as `dotnet-desktop` or
@@ -64,12 +88,12 @@ deep or Fable review in words.
 
    If the script prints `unknown`, stop and ask the user to pass `--stack`.
 
-3. **Load the profile.** Read `references/profiles/<base-stack>.md`, and
+5. **Load the profile.** Read `references/profiles/<base-stack>.md`, and
    `references/profiles/<overlay>.md` if an overlay is active. The YAML
    frontmatter gives you `personas`, `rotation_size`, `build_command`, and
    `test_command`.
 
-4. **Resolve the rotation.** Start from the profile's `personas` list. If
+6. **Resolve the rotation.** Start from the profile's `personas` list. If
    `--rotation <n>` was given, drop reviewers from the **end of this priority
    order** until the list is `n` long:
 
@@ -77,14 +101,16 @@ deep or Fable review in words.
    ui-ux-designer  →  tester  →  security-auditor  →  reviewer  →  implementer
    ```
 
-   Drop `ui-ux-designer` first. Never drop the Project Manager, which is not a
-   reviewer and does not count toward `rotation_size`: without it there is no
-   fix plan.
+   Drop `ui-ux-designer` first. The Project Manager is not in any profile's
+   `personas` list and does not count toward `rotation_size`. It always runs in
+   Phase 3, because without it there is no fix plan.
 
-5. **Announce the plan** before launching anything:
+7. **Announce the plan** before launching anything:
 
    ```
-   Starting persona review on branch: <branch>
+   Starting persona review
+   Repository: <absolute repo path>
+   Branch: <branch>  (base: <base-branch>)
    Detected stack: <stack> (+ <overlay>)
    Profile: <display_name>
    Reviewers: <list>
@@ -119,8 +145,8 @@ that list anchors them to what was already caught.
 | Adversary (`--fable`) | `references/agents/fable-adversary.md` | fable |
 | Skeptic (`--fable`) | `references/agents/fable-skeptic.md` | fable |
 
-The deep lenses take no `{{STACK_CRITERIA}}` substitution. Their templates are
-complete as written.
+The deep lenses take no `{{STACK_CRITERIA}}` substitution, but every template,
+theirs included, needs `{{BASE_BRANCH}}` replaced.
 
 Collect each agent's `### FINDINGS` block. If an agent returns no parsable
 block, note it and continue.
@@ -144,7 +170,7 @@ Only when the user opted in.
 
 1. **Verify the groups are disjoint.** Two groups sharing a file is a planning
    error. Merge them rather than running them in parallel.
-2. **Record the base commit** with `git rev-parse HEAD`. Phase 4's consolidation
+2. **Record the base commit** with `git -C <repo> rev-parse HEAD`. Phase 4's consolidation
    step needs it.
 3. **Launch one Implementer per group**, concurrently, using
    `references/agents/implementer-fixer.md` with `{{FIX_GROUP}}` replaced by
@@ -185,7 +211,9 @@ Then write the review record to project memory, following the template in
 
 ## Error handling
 
-- Detection returns `unknown`: ask for `--stack`. Do not guess.
+- Stack detection returns `unknown`: ask for `--stack`. Do not guess.
+- Base detection returns `unknown`, or the diff is empty: stop and ask. An empty
+  diff is not a clean review.
 - No PR for the branch: skip every `gh pr comment` step and have each persona
   return its review as text. The findings blocks work the same way.
 - A reviewer fails: report which one, continue with the rest, and tell the

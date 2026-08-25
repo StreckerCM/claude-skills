@@ -57,7 +57,7 @@ Your finding is always about the *decision*, not the execution.
 
 ## Process
 
-1. Read the full diff: `git diff main...HEAD`.
+1. Read the full diff: `git diff {{BASE_BRANCH}}...HEAD`.
 2. Reconstruct the intent from the code before reading any commit message, then
    compare the two.
 3. Read the history of the changed code: `git log -p --follow <file>`. Find out

@@ -3,8 +3,8 @@ name: salesforce
 display_name: "Salesforce (Apex / LWC)"
 build_command: "sf project deploy validate"
 test_command: "sf apex run test --test-level RunLocalTests"
-rotation_size: 6
-personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor, project-manager]
+rotation_size: 5
+personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor]
 ---
 
 # Salesforce Review Profile

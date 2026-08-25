@@ -44,3 +44,11 @@ personas: [implementer, reviewer, tester, security-auditor]
 - Request size limits: body parser has reasonable maxSize
 - Dependency security: no packages with known critical vulnerabilities
 - Docker: non-root user in Dockerfile, no secrets in image layers
+
+## Project Manager Criteria
+- API contract changes are versioned, and breaking route or payload changes are called out
+- Changelog or release notes updated for consumer-visible behaviour
+- Environment variables and configuration keys are documented for deployment
+- Migration steps recorded when the change alters schema or stored data
+- README and API examples match the current request and response shapes
+- Dependency additions are justified, and versions are not unnecessarily bleeding edge
