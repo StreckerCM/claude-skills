@@ -60,7 +60,14 @@ defect at a smaller scale. Route through the accessor.
 
    ```
    [IMPLEMENTER] FIX-3: Route zone lookup through ZoneRepository
+
+   refs #47
    ```
+
+   Include `refs #<number>` when the item carries an `issue` number. Use `refs`,
+   never `Closes` or `Fixes`. An issue stays open until a human confirms the fix
+   is right and the branch merged: your fix may be wrong, and a wrong fix must
+   not silently close a real defect.
 
    Do not push.
 

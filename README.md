@@ -23,6 +23,7 @@ an overlay on top of any of those.
 /persona-review feature/123-my-branch --overlay scientific-computing
 /persona-review feature/123-my-branch --rotation 4
 /persona-review feature/123-my-branch --fable      # add three deep lenses
+/persona-review feature/123-my-branch --issues     # file an issue per fix item
 /persona-review feature/123-my-branch --fix        # apply the fix plan
 /persona-review --repo E:/GitHub/OtherProject      # review a different repo
 ```
@@ -38,10 +39,21 @@ same files. The flow:
 |---|---|---|
 | 2 | Reviewers, in parallel | read-only |
 | 3 | Project Manager: merge and de-duplicate into one fix plan | read-only |
+| 3b | Orchestrator files one issue per fix item (`--issues`) | tracker |
 | 4 | Implementer, one per non-overlapping file group | **write** |
 | 4b | Consolidator, when several Implementers ran | **write** |
 
-Phase 4 runs only when you opt in. Nothing is pushed.
+Phases 3b and 4 run only when you opt in. Nothing is pushed.
+
+### Issues
+
+`--issues` files one tracker issue per fix item, after triage. The de-duplicated
+plan is the right unit: filing per reviewer opens the same defect once per
+persona that found it. Issues are keyed by branch and title, so re-reviewing a
+branch updates the picture instead of duplicating it, and blocking items are
+filed first so they take the lowest numbers. Phase 4 writes `refs #<number>` in
+its commits and never `Closes`, so an agent-applied fix cannot silently close a
+real defect.
 
 ### Deep review
 

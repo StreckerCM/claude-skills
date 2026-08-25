@@ -35,6 +35,7 @@ All are optional.
 | `--overlay <overlay>` | Add overlay criteria on top of the detected stack. |
 | `--rotation <size>` | Run this many reviewers instead of the profile default. |
 | `--fable` | Add three deep-review lenses on Fable. Opt-in only. |
+| `--issues` | File one tracker issue per fix item after triage. Opt-in only. |
 | `--fix` | Run Phase 4 and apply the fix plan. |
 | `--no-fix` | Stop after the fix plan. Report only. |
 
@@ -42,8 +43,9 @@ Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
 `static-site`, `salesforce`, `python-tools`. Valid overlay:
 `scientific-computing`.
 
-Never infer `--fable`. Run it only when the user passes the flag or asks for a
-deep or Fable review in words.
+Never infer `--fable` or `--issues`. Run either only when the user passes the
+flag or asks for it in words. `--issues` writes to a real tracker, and an issue
+can be closed but never deleted.
 
 ## Phase 1: Detect and load
 
@@ -164,17 +166,32 @@ Print the summary table, then follow `--fix` or `--no-fix`. With neither flag,
 stop here, show the plan, and ask whether to apply it. Do not apply a fix plan
 the user has not seen.
 
+## Phase 3b: File the issues
+
+Only with `--issues`. The Project Manager decides *what* becomes an issue, via
+the `issue:` field on each fix item. You run the `gh` calls, because a loop that
+fails halfway is retried here without re-running triage.
+
+The fix plan is the right unit. Filing per reviewer would open the same defect
+once per persona that found it.
+
+Read `references/orchestration.md` for the body template, the deduplication key,
+and the label set. Blocking items are filed first so they take the lowest
+numbers. Record each issue number against its fix item: Phase 4 needs it for
+`refs #<number>`, and Phase 5 lists them.
+
 ## Phase 4: Apply the fixes
 
 Only when the user opted in.
 
 1. **Verify the groups are disjoint.** Two groups sharing a file is a planning
    error. Merge them rather than running them in parallel.
-2. **Record the base commit** with `git -C <repo> rev-parse HEAD`. Phase 4's consolidation
-   step needs it.
+2. **Record the base commit** with `git -C <repo> rev-parse HEAD`. The
+   consolidation step needs it.
 3. **Launch one Implementer per group**, concurrently, using
    `references/agents/implementer-fixer.md` with `{{FIX_GROUP}}` replaced by
-   that group's items. One group means one agent and no consolidation.
+   that group's items, each carrying its issue number when Phase 3b filed one.
+   One group means one agent and no consolidation.
 4. **Consolidate.** If two or more Implementers ran, launch the Consolidator
    from `references/agents/consolidator.md`, giving it the base commit and every
    Implementer's result block including its `new-shared` list. Parallel agents
@@ -196,6 +213,7 @@ Print a summary:
 |---------|-------|----------|------------------|
 
 **Fix plan:** <N> findings merged into <M> items, <B> blocking
+**Issues:** <#numbers filed>   (only when --issues ran)
 **Applied:** <A> of <M>    (only when Phase 4 ran)
 **Build:** pass / fail     **Tests:** pass / fail / not-run
 
@@ -219,7 +237,12 @@ Then write the review record to project memory, following the template in
 - A reviewer fails: report which one, continue with the rest, and tell the
   Project Manager that persona is missing.
 - The Project Manager fails: show the raw findings and stop. Never build a fix
-  plan yourself and never run Phase 4 without one.
+  plan yourself, never run Phase 4 without one, and never file issues from raw
+  findings. Untriaged findings would file the same defect once per persona.
+- No GitHub remote, or `gh auth status` fails, with `--issues`: report it and
+  continue. Do not half-file.
+- Issue creation fails partway: say exactly which items were filed and which
+  were not, and do not describe the run as complete.
 - An Implementer fails: keep the other groups' commits, report the failed items
   as unapplied. Do not retry into a dirty tree.
 - The build fails in Phase 2: run every review anyway, and flag it at the top of

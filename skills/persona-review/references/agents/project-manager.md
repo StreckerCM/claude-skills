@@ -54,6 +54,25 @@ costs parallelism. Under-scoping costs correctness.
 If two fix items share any file, they must land in the same `group`. Number
 groups from 1. Items in different groups must have completely disjoint scopes.
 
+## Issue-worthiness
+
+Mark every fix item `issue: yes` or `issue: no`. When the run was started with
+`--issues`, the orchestrator files one tracker issue per `yes` item. Your fix
+plan is the right unit for that: a de-duplicated item is one problem, whereas
+the raw findings would have filed the same defect three times under three
+personas.
+
+Say `no` only when the item is not actionable in this repository:
+
+- It describes the reviewer's environment, not the code. A local toolchain that
+  cannot build is a sign-off gate, not a defect someone can be assigned.
+- It is already tracked by an open issue the orchestrator listed for you. Say
+  `no` and name that issue number in `detail`.
+- The fix is a one-token typo already applied in a later commit on the branch.
+
+Everything else is `yes`, including low-severity items. A tracker entry costs
+little; a defect that exists only in a chat transcript is lost.
+
 ## Ordering
 
 Order items by severity: critical, then high, then medium, then low. Within a
@@ -106,8 +125,13 @@ Post a PR comment using `gh pr comment` with this structure:
 ## Fix plan
 
 End your response with this block. The orchestrator parses it to drive the
-Implementer, so keep the field names and the order exactly as shown. Write
-`- none` if there is nothing to fix.
+Implementer and, with `--issues`, to file the tracker issues, so keep the field
+names and the order exactly as shown. Write `- none` if there is nothing to fix.
+
+`title`, `detail`, and `fix` become the issue body verbatim. Write them for
+someone who was not in this review: state the defect, why it matters, and the
+concrete change. When you resolved a conflict between reviewers, say in `detail`
+which fix you rejected and why, so nobody re-derives the losing option.
 
 ```
 ### FIX PLAN
@@ -115,6 +139,7 @@ Implementer, so keep the field names and the order exactly as shown. Write
   group: 1
   severity: critical
   blocking: true
+  issue: yes
   sources: REV-2, SEC-1
   scope: src/Data/ZoneRepository.cs, src/Data/IZoneRepository.cs
   title: <one line>
