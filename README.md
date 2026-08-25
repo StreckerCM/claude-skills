@@ -1,83 +1,66 @@
 # Claude Skills
 
-A collection of custom Claude Code skills for AI-assisted software development.
+Custom skills for Claude Code. Each skill installs into `~/.claude/skills/` and
+activates automatically when its description matches the task.
 
 ## Skills
 
-### [persona-review](persona-review/)
+### persona-review
 
-Technology-aware rotating persona review system. Auto-detects your project's technology stack and runs tailored code reviews through specialized sub-agent personas (Implementer, Reviewer, Tester, UI/UX Designer, Security Auditor, Project Manager).
+Technology-aware rotating persona review. Detects the project's technology stack
+and runs a tailored code review through independent sub-agent personas:
+Implementer, Reviewer, Tester, UI/UX Designer, Security Auditor, and Project
+Manager.
 
-**Supported stacks:**
-- .NET Desktop (WPF/WinForms)
-- .NET Libraries/NuGet
-- ASP.NET Web
-- Node.js/Express API
-- Static Sites (Astro/Eleventy)
-- Salesforce (Apex/LWC)
-- Python Tools
-- Scientific Computing (overlay)
+Supported stacks: .NET Desktop (WPF, WinForms), .NET libraries and NuGet
+packages, ASP.NET web, Node.js and Express APIs, static sites (Astro, Eleventy),
+Salesforce (Apex, LWC), and Python tools. Scientific computing is available as
+an overlay on top of any of those.
 
-**Usage:**
 ```
-/persona-review feature/123-feature-name                              # auto-detect stack
-/persona-review feature/123-feature-name --stack dotnet-desktop       # explicit stack
-/persona-review feature/123-feature-name --overlay scientific-computing
+/persona-review feature/123-my-branch
+/persona-review feature/123-my-branch --stack dotnet-desktop
+/persona-review feature/123-my-branch --overlay scientific-computing
+/persona-review feature/123-my-branch --rotation 4
 ```
 
-## Installation
+Every argument is optional. With none, the skill reviews the current branch and
+detects the stack itself.
 
-### Option 1: Quick development (per-session)
+## Install
 
-Load a skill directly without installing, for testing or development:
+Run the installer for your platform from the repository root:
+
+```powershell
+./install.ps1
+```
+
 ```bash
-claude --plugin-dir "C:/GitHub/claude-skills/persona-review"
+./install.sh
 ```
 
-### Option 2: Local marketplace (persistent)
+Both copy every skill under `skills/` into `~/.claude/skills/`, replacing any
+earlier copy. Pass `-Destination` or `--destination` to install into a project's
+`.claude/` directory instead, and `-WhatIf` or `--dry-run` to preview.
 
-Register this repo as a local marketplace, then install skills from it:
-```
-/plugin marketplace add C:/GitHub/claude-skills
-/plugin install persona-review@strecker-skills
-```
+If `~/.claude/skills/` did not exist before you ran the installer, restart
+Claude Code once so it starts watching the directory. Later edits are picked up
+without a restart. Confirm with `/skills`.
 
-### Option 3: From GitHub (persistent)
+This repository is the source of truth. Do not edit the copies under
+`~/.claude/skills/`, because the next install overwrites them.
 
-Add the marketplace from GitHub in your project's `.claude/settings.json`:
-```json
-{
-  "extraKnownMarketplaces": {
-    "strecker-skills": {
-      "source": {
-        "source": "github",
-        "repo": "StreckerCM/claude-skills"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "persona-review@strecker-skills": true
-  }
-}
-```
+## Repository layout
 
-Or interactively:
 ```
-/plugin marketplace add StreckerCM/claude-skills
-/plugin install persona-review@strecker-skills
+claude-skills/
+  skills/<skill-name>/
+    SKILL.md              Entry point: frontmatter and the workflow
+    references/           Depth loaded on demand, not at startup
+    scripts/              Bundled shell scripts
+  install.ps1
+  install.sh
 ```
-
-## Adding New Skills
-
-Create a new directory at the repo root with:
-```
-<skill-name>/
-  .claude-plugin/plugin.json
-  commands/<skill-name>.md
-  README.md
-```
-
-See [persona-review/](persona-review/) for a complete example.
 
 ## License
 

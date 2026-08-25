@@ -1,45 +1,75 @@
 # Claude Code Configuration for claude-skills
 
-## Project Overview
-This repo contains custom Claude Code skills (plugins). Each skill lives in its own top-level directory with a `.claude-plugin/plugin.json` manifest.
+## Project overview
 
-## Repository Structure
+This repository holds personal Claude Code skills. Each skill is a directory
+under `skills/`, installed into `~/.claude/skills/` by `install.ps1` or
+`install.sh`.
+
+These are personal skills, not plugins. There is no `.claude-plugin/` manifest
+and no marketplace. The plugin packaging was removed on 2026-08-24 because it
+was never installable in practice.
+
+## Repository layout
+
 ```
 claude-skills/
-  <plugin-name>/
-    .claude-plugin/plugin.json            # Plugin manifest (name, version, description)
-    skills/<skill-name>/SKILL.md          # Skill entry point (frontmatter + orchestration)
-    skills/<skill-name>/scripts/          # Shell scripts bundled with the skill
-    skills/<skill-name>/references/       # Supporting files (agent templates, profiles, etc.)
-    README.md                             # Plugin-specific documentation
+  skills/<skill-name>/
+    SKILL.md              Entry point: frontmatter and the workflow
+    references/           Depth loaded on demand
+    scripts/              Bundled shell scripts
+  install.ps1
+  install.sh
 ```
 
-## Development Rules
+## Development rules
 
-### Shell Scripts
-- All scripts must run in Git Bash on Windows (no GNU-only extensions)
-- Use forward slashes in paths
-- Handle Windows-style paths gracefully (convert `C:\` to `/c/` when needed)
+### Paths
 
-### Skills
-- Skills use `SKILL.md` with YAML frontmatter (`name`, `description`, `argument-hint`)
-- Follow the phased workflow pattern: detect context, load configuration, execute
-- Use `${CLAUDE_SKILL_DIR}` for all file path references (never hardcode relative paths)
-- Use sub-agents for isolated, parallelizable work
+`${CLAUDE_SKILL_DIR}` is a plugin variable and is **undefined** in a personal
+skill. Never use it here. Instead:
 
-### Sub-Agents
-- Each agent gets fresh context (no state bleed between agents, no access to plugin files)
-- The orchestrator must READ reference files and INJECT content into Agent tool prompts
-- Include model hints in agent frontmatter (opus for judgment, sonnet for bulk work, haiku for bookkeeping)
-- Agents post structured output (PR comments, summaries) in consistent markdown format
-- Agent templates with placeholders (e.g., `{{STACK_CRITERIA}}`) go in `references/agents/`, NOT at plugin root
+- Reference bundled files by a path relative to the skill directory, such as
+  `references/profiles/dotnet-library.md`.
+- In shell commands, write the full path:
+  `~/.claude/skills/<skill-name>/scripts/foo.sh`.
+- State the skill root once near the top of `SKILL.md` so both forms are
+  unambiguous.
+
+### SKILL.md
+
+- Frontmatter carries `name` and `description` only. The `description` decides
+  when the skill activates, so write it as trigger conditions.
+- Keep `SKILL.md` short. It loads on every session, so put depth in
+  `references/` and say when to load each file.
+- Leave `paths` unset unless the skill genuinely applies to one file type.
+
+### Shell scripts
+
+- Must run in Git Bash on Windows. No GNU-only extensions.
+- Use forward slashes, and normalize Windows-style paths when accepting input.
+
+### Sub-agents
+
+- Sub-agents get fresh context and cannot read the skill's files. The
+  orchestrator must read reference files and inject their content into the Agent
+  tool's `prompt`.
+- Keep agent templates in `references/agents/`. A directory named `agents/` at
+  the root gets auto-discovered and the templates load as broken standalone
+  agents.
+- Include a `model` hint per agent: opus for judgment, sonnet for bulk work,
+  haiku for bookkeeping.
 
 ### Profiles
-- Profiles use markdown with YAML frontmatter for metadata
-- Overlays are additive (append to base profile, never replace)
-- Profile customizations are stack-specific review criteria, not full persona redefinitions
+
+- Markdown with YAML frontmatter for metadata.
+- Overlays are additive. They append to the base profile and never replace it.
+- Profile content is stack-specific review criteria, not a full persona
+  redefinition.
 
 ## Testing
-- Test detection scripts against known project directories
-- Verify correct persona selection per stack
-- Confirm overlay merging produces expected combined criteria
+
+- Run `install.sh --dry-run` before a real install.
+- Test detection scripts against known project directories.
+- Verify the correct persona set is selected per stack, and that overlay merging
+  produces the combined criteria.

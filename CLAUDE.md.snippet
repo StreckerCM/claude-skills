@@ -1,0 +1,17 @@
+## Code review
+
+To run a persona review, invoke the skill: `skill: "persona-review"`. It detects
+the project's tech stack and launches specialized sub-agent reviewers
+(Implementer, Reviewer, Tester, UI/UX Designer, Security Auditor, Project
+Manager). The user can also type `/persona-review` directly.
+
+Arguments, all optional, passed via `args`:
+
+- `<branch>` — review this branch. Default: the current branch.
+- `--stack <stack>` — skip detection. One of `dotnet-desktop`,
+  `dotnet-library`, `aspnet-web`, `nodejs-api`, `static-site`, `salesforce`,
+  `python-tools`.
+- `--overlay scientific-computing` — add scientific computing criteria.
+- `--rotation 4` — run a compact rotation instead of the profile default.
+
+Example: `skill: "persona-review", args: "feature/my-branch --stack dotnet-desktop"`
