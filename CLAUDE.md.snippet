@@ -13,5 +13,12 @@ Arguments, all optional, passed via `args`:
   `python-tools`.
 - `--overlay scientific-computing` — add scientific computing criteria.
 - `--rotation 4` — run a compact rotation instead of the profile default.
+- `--fable` — add three deep lenses (Architect, Adversary, Skeptic) on Fable.
+  Opt-in only: pass it when the user asks for a deep or Fable review, never on
+  your own judgment.
+- `--fix` — apply the fix plan. Without it the skill stops at the plan and asks.
+
+Only the Implementer modifies code. The other personas are read-only reviewers,
+and the Project Manager merges their findings into one de-duplicated fix plan.
 
 Example: `skill: "persona-review", args: "feature/my-branch --stack dotnet-desktop"`

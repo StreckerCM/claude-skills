@@ -1,12 +1,18 @@
 ---
 name: persona-review
-description: Run a technology-aware persona code review. Auto-detects the project's tech stack and launches specialized sub-agent reviewers (Implementer, Reviewer, Tester, UI/UX Designer, Security Auditor, Project Manager). Use when asked to review code, run a persona review, or launch sub-agent reviewers.
+description: Run a technology-aware persona code review. Auto-detects the project's tech stack and launches specialized sub-agent reviewers (Implementer, Reviewer, Tester, UI/UX Designer, Security Auditor, Project Manager), then optionally applies the fixes. Use when asked to review code, run a persona review, or launch sub-agent reviewers.
 ---
 
 # Persona review
 
-Detect the project's tech stack, load the matching review profile, and launch
-independent sub-agent personas to review the code.
+Detect the project's tech stack, load the matching review profile, and run
+independent sub-agent personas over the branch.
+
+**Reviewers report. Only the Implementer writes code.** Every persona except the
+Implementer is read-only. The Project Manager merges their findings into one
+de-duplicated fix plan, and the Implementer applies it. This separation is not
+optional: parallel agents editing the same files produce conflicts and duplicate
+implementations.
 
 ## Skill root
 
@@ -19,18 +25,24 @@ directory as the root.
 
 ## Arguments
 
-All are optional. The user passes them after the skill name.
+All are optional.
 
 | Argument | Effect |
 |---|---|
 | `<branch>` | Review this branch. Default: the current branch. |
 | `--stack <stack>` | Skip detection and use this stack. |
 | `--overlay <overlay>` | Add overlay criteria on top of the detected stack. |
-| `--rotation <size>` | Run this many personas instead of the profile default. |
+| `--rotation <size>` | Run this many reviewers instead of the profile default. |
+| `--fable` | Add three deep-review lenses on Fable. Opt-in only. |
+| `--fix` | Run Phase 4 and apply the fix plan. |
+| `--no-fix` | Stop after the fix plan. Report only. |
 
 Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
 `static-site`, `salesforce`, `python-tools`. Valid overlay:
 `scientific-computing`.
+
+Never infer `--fable`. Run it only when the user passes the flag or asks for a
+deep or Fable review in words.
 
 ## Phase 1: Detect and load
 
@@ -55,52 +67,118 @@ Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
 3. **Load the profile.** Read `references/profiles/<base-stack>.md`, and
    `references/profiles/<overlay>.md` if an overlay is active. The YAML
    frontmatter gives you `personas`, `rotation_size`, `build_command`, and
-   `test_command`. `--rotation` overrides `rotation_size` by truncating the
-   `personas` list.
+   `test_command`.
 
-4. **Announce the plan** before launching anything:
+4. **Resolve the rotation.** Start from the profile's `personas` list. If
+   `--rotation <n>` was given, drop reviewers from the **end of this priority
+   order** until the list is `n` long:
+
+   ```
+   ui-ux-designer  →  tester  →  security-auditor  →  reviewer  →  implementer
+   ```
+
+   Drop `ui-ux-designer` first. Never drop the Project Manager, which is not a
+   reviewer and does not count toward `rotation_size`: without it there is no
+   fix plan.
+
+5. **Announce the plan** before launching anything:
 
    ```
    Starting persona review on branch: <branch>
    Detected stack: <stack> (+ <overlay>)
    Profile: <display_name>
-   Personas: <list>
+   Reviewers: <list>
+   Deep lenses: Architect, Adversary, Skeptic     (only with --fable)
    Build: <build_command>
    Tests: <test_command>
+   Fix phase: enabled / report only
    ```
 
-## Phase 2: Launch the personas
+## Phase 2: Review, in parallel, read-only
 
 Sub-agents get fresh context and **cannot read this skill's files**. You must
 read each agent template yourself and inject its full text into the Agent tool's
 `prompt`. A prompt that tells the sub-agent to go read a file will fail.
 
-Read `references/orchestration.md` for the prompt template and the exact
-substitution steps. Follow it literally.
+Read `references/orchestration.md` for the prompt template and the substitution
+steps. Follow it literally.
 
-Launch order:
+Launch every reviewer in the rotation concurrently: send them as multiple tool
+calls in one message. With `--fable`, launch the three deep lenses in the same
+message. They must not receive the standard reviewers' findings, because seeing
+that list anchors them to what was already caught.
 
-- **Round 1, in parallel:** Implementer, Reviewer, Tester, UI/UX Designer,
-  Security Auditor — whichever are in the rotation. Send them as multiple tool
-  calls in one message so they run concurrently.
-- **Round 2, after Round 1 finishes:** Project Manager, if in the rotation. It
-  reads the other reviews, so it cannot run in parallel with them.
+| Round 2 agents | Template | Model |
+|---|---|---|
+| Implementer | `references/agents/implementer.md` | sonnet |
+| Reviewer | `references/agents/reviewer.md` | opus |
+| Tester | `references/agents/tester.md` | sonnet |
+| UI/UX Designer | `references/agents/ui-ux-designer.md` | sonnet |
+| Security Auditor | `references/agents/security-auditor.md` | opus |
+| Architect (`--fable`) | `references/agents/fable-architect.md` | fable |
+| Adversary (`--fable`) | `references/agents/fable-adversary.md` | fable |
+| Skeptic (`--fable`) | `references/agents/fable-skeptic.md` | fable |
 
-## Phase 3: Report
+The deep lenses take no `{{STACK_CRITERIA}}` substitution. Their templates are
+complete as written.
 
-Print a summary table:
+Collect each agent's `### FINDINGS` block. If an agent returns no parsable
+block, note it and continue.
+
+## Phase 3: Merge into a fix plan
+
+Launch the Project Manager alone, after every reviewer has finished. Inject
+`references/agents/project-manager.md` plus **every findings block from Phase
+2**, verbatim, labeled by persona.
+
+It returns a `### FIX PLAN`: findings de-duplicated into fix items, each with a
+`scope` of files and a `group` number. Items sharing a file share a group.
+
+Print the summary table, then follow `--fix` or `--no-fix`. With neither flag,
+stop here, show the plan, and ask whether to apply it. Do not apply a fix plan
+the user has not seen.
+
+## Phase 4: Apply the fixes
+
+Only when the user opted in.
+
+1. **Verify the groups are disjoint.** Two groups sharing a file is a planning
+   error. Merge them rather than running them in parallel.
+2. **Record the base commit** with `git rev-parse HEAD`. Phase 4's consolidation
+   step needs it.
+3. **Launch one Implementer per group**, concurrently, using
+   `references/agents/implementer-fixer.md` with `{{FIX_GROUP}}` replaced by
+   that group's items. One group means one agent and no consolidation.
+4. **Consolidate.** If two or more Implementers ran, launch the Consolidator
+   from `references/agents/consolidator.md`, giving it the base commit and every
+   Implementer's result block including its `new-shared` list. Parallel agents
+   cannot see each other, so this is what catches two of them writing the same
+   method twice.
+5. **Verify.** Run the build and test commands yourself. Report the result
+   honestly, including failure.
+
+Nothing is pushed. Leave the commits local for the user to review.
+
+## Phase 5: Report
+
+Print a summary:
 
 ```markdown
 ## Persona review complete
 
-| Persona | Model | Status | Key findings |
-|---------|-------|--------|--------------|
-| Implementer | sonnet | Clean | <summary> |
+| Persona | Model | Findings | Highest severity |
+|---------|-------|----------|------------------|
+
+**Fix plan:** <N> findings merged into <M> items, <B> blocking
+**Applied:** <A> of <M>    (only when Phase 4 ran)
+**Build:** pass / fail     **Tests:** pass / fail / not-run
 
 **Stack:** <stack>  **Branch:** <branch>  **PR:** #<number>
 ```
 
-State plainly whether the review is clean or which items are outstanding.
+State plainly whether the branch is ready or which items are outstanding. Report
+failures and skipped items explicitly; do not describe a partial run as
+complete.
 
 Then write the review record to project memory, following the template in
 `references/orchestration.md`.
@@ -108,8 +186,13 @@ Then write the review record to project memory, following the template in
 ## Error handling
 
 - Detection returns `unknown`: ask for `--stack`. Do not guess.
-- No PR for the branch: skip the `gh pr comment` step and have each persona
-  return its review as text instead.
-- A sub-agent fails: report which one, continue with the rest.
-- The build fails: run every review anyway, and flag the build failure at the
-  top of the summary.
+- No PR for the branch: skip every `gh pr comment` step and have each persona
+  return its review as text. The findings blocks work the same way.
+- A reviewer fails: report which one, continue with the rest, and tell the
+  Project Manager that persona is missing.
+- The Project Manager fails: show the raw findings and stop. Never build a fix
+  plan yourself and never run Phase 4 without one.
+- An Implementer fails: keep the other groups' commits, report the failed items
+  as unapplied. Do not retry into a dirty tree.
+- The build fails in Phase 2: run every review anyway, and flag it at the top of
+  the summary.

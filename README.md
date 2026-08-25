@@ -22,10 +22,48 @@ an overlay on top of any of those.
 /persona-review feature/123-my-branch --stack dotnet-desktop
 /persona-review feature/123-my-branch --overlay scientific-computing
 /persona-review feature/123-my-branch --rotation 4
+/persona-review feature/123-my-branch --fable      # add three deep lenses
+/persona-review feature/123-my-branch --fix        # apply the fix plan
 ```
 
-Every argument is optional. With none, the skill reviews the current branch and
-detects the stack itself.
+Every argument is optional. With none, the skill reviews the current branch,
+detects the stack, and stops at the fix plan for you to approve.
+
+**Reviewers report. Only the Implementer writes code.** Every persona except the
+Implementer is read-only, which keeps parallel agents from conflicting on the
+same files. The flow:
+
+| Phase | Agents | Access |
+|---|---|---|
+| 2 | Reviewers, in parallel | read-only |
+| 3 | Project Manager: merge and de-duplicate into one fix plan | read-only |
+| 4 | Implementer, one per non-overlapping file group | **write** |
+| 4b | Consolidator, when several Implementers ran | **write** |
+
+Phase 4 runs only when you opt in. Nothing is pushed.
+
+### Deep review
+
+`--fable` adds three lenses on Fable, aimed at what a stack checklist
+structurally cannot catch. Use it when you suspect the standard rotation is
+missing something.
+
+| Lens | Asks |
+|---|---|
+| Architect | Is this the right shape? Wrong abstractions, misplaced responsibility, coupling |
+| Adversary | What breaks this? Boundaries, partial failure, concurrency, scale |
+| Skeptic | Is this the right change at all? Cause versus symptom, and what it costs |
+
+They run blind to the standard reviewers' findings, so that list cannot anchor
+them. It is opt-in and never inferred.
+
+### Duplicate functionality
+
+Parallel agents cannot see each other, so two of them can independently write
+the same method. Three defenses: the Project Manager partitions fixes by file so
+overlapping work never runs concurrently, the Reviewer carries standing
+duplicate-detection criteria, and the Consolidator runs after parallel fixes to
+merge anything that slipped through.
 
 ## Install
 
