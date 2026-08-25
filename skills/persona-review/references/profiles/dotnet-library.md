@@ -16,7 +16,17 @@ personas: [implementer, reviewer, tester, security-auditor]
 - Strong naming if required by downstream consumers
 - Proper exception hierarchy (use standard .NET exception types where appropriate)
 - Follow .NET library design guidelines (IDisposable pattern, async naming, etc.)
+- `ConfigureAwait(false)` on every await in library code. Without it a
+  continuation is posted back to the caller's synchronisation context, which
+  deadlocks a WPF or WinForms consumer that blocks on the returned task
+- Every public async method accepts a `CancellationToken`, defaulted where
+  that suits the API. A caller cannot add cancellation to a library that
+  does not offer it
 - Ensure netstandard/multi-targeting is correct for intended consumers
+- Conditional compilation across target frameworks is correct on **every**
+  target, not just the one built locally. An API available on net8.0 and
+  missing on netstandard2.0 inside an untested `#if` compiles on the
+  developer's machine and fails in CI, or worse, ships behaving differently
 
 ## Reviewer Criteria
 - Breaking change detection: check removed/renamed public members, changed signatures
@@ -31,6 +41,8 @@ personas: [implementer, reviewer, tester, security-auditor]
 - Known-answer tests for algorithmic code
 - Boundary value testing (int.MaxValue, empty collections, null inputs)
 - Cross-platform compatibility tests if targeting multiple runtimes
+- The test project multi-targets the same frameworks as the library. Testing
+  one target leaves the conditional code on the others unexecuted
 - NuGet packaging validation (correct dependencies, metadata)
 - Test public API contracts, not internal implementation
 - Verify backward compatibility with previous test baselines

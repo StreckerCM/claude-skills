@@ -21,7 +21,8 @@ For each reviewer in the rotation:
    frontmatter.
 2. From the profile you already loaded, extract that persona's criteria section,
    such as `## Implementer Criteria`.
-3. If an overlay is active, extract the same section from the overlay profile.
+3. For each active overlay, extract the same section from that overlay profile.
+   Several overlays can apply at once, and they are additive.
 4. Replace the `{{STACK_CRITERIA}}` placeholder with the criteria from step 2.
 5. Replace every `{{BASE_BRANCH}}` placeholder with the base branch resolved in
    Phase 1. Templates carry the placeholder rather than a literal `main`,
@@ -44,7 +45,7 @@ Test command: <test_command>
 
 ## Additional criteria (<overlay> overlay)
 <overlay criteria for this persona>
-                            (omit this section if no overlay is active)
+                            (one section per active overlay; omit if none)
 
 ## Instructions
 1. Run `git diff <base-branch>...HEAD` to see every change on this branch.

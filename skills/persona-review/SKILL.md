@@ -41,8 +41,10 @@ All are optional.
 | `--no-fix` | Stop after the fix plan. Report only. |
 
 Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
-`static-site`, `salesforce`, `python-tools`. Valid overlays:
-`scientific-computing`, and `experience-cloud` for Salesforce.
+`static-site`, `salesforce`, `python-tools`.
+
+Valid overlays: `scientific-computing`, `entity-framework`, `blazor`, and
+`experience-cloud`. More than one can apply at once.
 
 `--rounds` above 1 requires `--fix`. Reviewing unchanged code a second time
 returns the same findings, so a round without a fix phase is wasted work.
@@ -88,14 +90,14 @@ can be closed but never deleted.
    ```
 
    The script prints one line, such as `dotnet-desktop` or
-   `dotnet-library+scientific-computing`. Split on `+` to separate the base
-   stack from the overlay. A `--overlay` argument adds to whatever the script
-   detected.
+   `aspnet-web+entity-framework+blazor`. Split on `+`: the first field is the
+   base stack and **every remaining field is an overlay**. A project can carry
+   several. A `--overlay` argument adds to whatever the script detected.
 
    If the script prints `unknown`, stop and ask the user to pass `--stack`.
 
-5. **Load the profile.** Read `references/profiles/<base-stack>.md`, and
-   `references/profiles/<overlay>.md` if an overlay is active. The YAML
+5. **Load the profile.** Read `references/profiles/<base-stack>.md`, then
+   `references/profiles/<overlay>.md` for each active overlay. The YAML
    frontmatter gives you `personas`, `rotation_size`, `build_command`, and
    `test_command`.
 

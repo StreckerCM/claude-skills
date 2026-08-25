@@ -16,6 +16,11 @@ personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor]
 - Use ObservableCollection for bound lists, not List<T>
 - Verify Dispatcher.Invoke/BeginInvoke for cross-thread UI updates
 - Ensure async/await is used correctly (no .Result or .Wait() on UI thread)
+- `async void` only on an event handler, never on a method you call yourself.
+  An exception in an `async void` method cannot be awaited or caught by the
+  caller and reaches the runtime as unhandled, which kills the process
+- Every `async void` event handler wraps its body in try/catch. There is no
+  other place to catch it
 - Check that RelayCommand/DelegateCommand CanExecute is wired correctly
 
 ## Reviewer Criteria
@@ -26,6 +31,13 @@ personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor]
 - Verify nullable reference type annotations on public APIs
 - Look for memory leaks: event handler subscriptions without unsubscription
 - Check for proper use of WeakReference where appropriate
+- Global unhandled-exception handlers are wired: `DispatcherUnhandledException`
+  (WPF) or `Application.ThreadException` (WinForms), plus
+  `AppDomain.CurrentDomain.UnhandledException` and
+  `TaskScheduler.UnobservedTaskException`. Without them a desktop app dies
+  with no log and no message to the user
+- Fire-and-forget `Task.Run` whose exception nobody observes is the same
+  silent failure in a different shape
 
 ## Tester Criteria
 - Use MSTest, xUnit, or NUnit per project convention

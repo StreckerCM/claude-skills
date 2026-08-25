@@ -3,8 +3,8 @@ name: static-site
 display_name: "Static Site (Astro / Eleventy)"
 build_command: "npm run build"
 test_command: ""
-rotation_size: 3
-personas: [implementer, reviewer, ui-ux-designer]
+rotation_size: 4
+personas: [implementer, reviewer, ui-ux-designer, security-auditor]
 ---
 
 # Static Site Review Profile
@@ -35,6 +35,24 @@ personas: [implementer, reviewer, ui-ux-designer]
 - Typography: readable font sizes (min 16px body), proper line height
 - Color contrast: WCAG AA minimum (4.5:1 for normal text)
 - Dark mode support if the site uses it
+
+## Security Auditor Criteria
+- Security headers are configured for the host: Content-Security-Policy,
+  X-Content-Type-Options, Referrer-Policy and HSTS. On a static host these
+  live in `_headers`, `netlify.toml`, `vercel.json` or
+  `staticwebapp.config.json`, not in application code, which is why they
+  are routinely missing entirely
+- Forms are the one real attack surface on a static site. Verify where the
+  submission goes, that the endpoint is not an unauthenticated relay into
+  an inbox, and that it has spam protection
+- No secrets in client code. Anything in the built output is public,
+  including an API key inlined at build time from an environment variable
+- Third-party scripts: every analytics, chat, font or embed tag is code
+  someone else controls, running on your domain. Confirm each is intended
+  and pinned, with subresource integrity where the host supports it
+- `target="_blank"` links carry `rel="noopener"`
+- Verify the built output contains no source maps, `.env` files, draft
+  content, or admin pages that were not meant to ship
 
 ## Project Manager Criteria
 - Content accuracy: verify text, links, and contact information

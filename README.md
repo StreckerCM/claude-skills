@@ -14,9 +14,15 @@ Manager.
 
 Supported stacks: .NET Desktop (WPF, WinForms), .NET libraries and NuGet
 packages, ASP.NET web, Node.js and Express APIs, static sites (Astro, Eleventy),
-Salesforce (Apex, LWC, Flow), and Python tools. Two overlays add criteria on
-top of a detected stack: scientific computing, and Experience Cloud for
-Salesforce orgs that ship a public site.
+Salesforce (Apex, LWC, Flow), and Python tools. Four overlays add criteria on top of a
+detected stack, and more than one can apply at once:
+
+| Overlay | Fires on |
+|---|---|
+| `entity-framework` | a `DbContext` in the source |
+| `blazor` | `.razor` components |
+| `scientific-computing` | numerical libraries, domain terms, or non-system native interop |
+| `experience-cloud` | Salesforce `experiences/` or `networks/` metadata |
 
 ```
 /persona-review feature/123-my-branch

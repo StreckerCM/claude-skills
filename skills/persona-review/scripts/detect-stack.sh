@@ -29,9 +29,14 @@ find_pruned() {
   find "$PROJECT_DIR" -maxdepth "$depth" \( "${PRUNE[@]}" \) -prune -o "$@" 2>/dev/null
 }
 
+# Depth 5 reaches src/<Project>/<Area>/<Sub>/file.ext, which is the common .NET
+# and Salesforce layout. Depth 3 stopped at the project directory and missed it.
+# Measured cost of the extra two levels is about 60ms per repository, against a
+# review that then spawns several opus agents.
 has_file() {
-  local pattern="$1"
-  find_pruned 3 -name "$pattern" -print -quit | grep -q .
+  local pattern="$1" out
+  out=$(find_pruned 5 -name "$pattern" -print -quit 2>/dev/null || true)
+  [ -n "$out" ]
 }
 
 has_file_shallow() {
@@ -47,8 +52,10 @@ has_file_shallow() {
 # checked out into a folder called Survey should not be classified by that.
 has_file_iname() {
   local pattern="$1"
-  find "$PROJECT_DIR" -mindepth 1 -maxdepth 3 \( "${PRUNE[@]}" \) -prune -o \
-    -iname "$pattern" -print -quit 2>/dev/null | grep -q .
+  local out
+  out=$(find "$PROJECT_DIR" -mindepth 1 -maxdepth 5 \( "${PRUNE[@]}" \) -prune -o \
+    -iname "$pattern" -print -quit 2>/dev/null || true)
+  [ -n "$out" ]
 }
 
 has_dir() {
@@ -59,14 +66,22 @@ has_dir() {
 # Salesforce metadata directories sit under force-app/main/default and other
 # package directories, so their depth varies by project layout.
 has_dir_anywhere() {
-  local dir="$1"
-  find_pruned 6 -type d -name "$dir" -print -quit | grep -q .
+  local dir="$1" out
+  out=$(find_pruned 6 -type d -name "$dir" -print -quit 2>/dev/null || true)
+  [ -n "$out" ]
 }
 
+# These probes capture output instead of piping into head or grep -q.
+#
+# Under `set -o pipefail`, a downstream reader that closes the pipe early
+# sends SIGPIPE to grep, and the pipeline reports failure even though the
+# match succeeded. The failure is size-dependent: with few files grep finishes
+# before the reader closes and the probe works, so it passes on small
+# repositories and silently returns false on large ones.
 file_contains() {
-  local pattern="$1"
-  local glob="$2"
-  find_pruned 3 -name "$glob" -exec grep -l "$pattern" {} + | head -1 | grep -q .
+  local pattern="$1" glob="$2" out
+  out=$(find_pruned 5 -name "$glob" -exec grep -l "$pattern" {} + 2>/dev/null || true)
+  [ -n "$out" ]
 }
 
 # Windows system libraries. P/Invoke into these is ordinary desktop plumbing:
@@ -76,9 +91,10 @@ file_contains() {
 SYSTEM_DLLS='kernel32|user32|advapi32|shell32|gdi32|oleaut32|ole32|comctl32|comdlg32|ws2_32|winmm|dwmapi|uxtheme|psapi|version|crypt32|secur32|setupapi|iphlpapi|netapi32|wintrust|userenv|winspool|imm32|dbghelp|ntdll|msvcrt'
 
 has_nonsystem_interop() {
-  local glob="$1" pattern="$2"
-  find_pruned 3 -name "$glob" -exec grep -h "$pattern" {} + 2>/dev/null \
-    | grep -viE "\"($SYSTEM_DLLS)" | grep -q .
+  local glob="$1" pattern="$2" hits
+  hits=$(find_pruned 5 -name "$glob" -exec grep -h "$pattern" {} + 2>/dev/null || true)
+  [ -n "$hits" ] || return 1
+  printf "%s" "$hits" | grep -qviE "\"($SYSTEM_DLLS)"
 }
 
 package_has_dep() {
@@ -94,7 +110,14 @@ package_has_dep() {
 # --- Stack detection (priority order) ---
 
 STACK=""
-OVERLAY=""
+OVERLAYS=""
+
+add_overlay() {
+  case " $OVERLAYS " in
+    *" $1 "*) ;;
+    *) OVERLAYS="${OVERLAYS:+$OVERLAYS }$1" ;;
+  esac
+}
 
 # Salesforce (check early - very distinctive signals)
 if has_file_shallow "sfdx-project.json" || has_dir "force-app"; then
@@ -160,9 +183,26 @@ fi
 # every Salesforce review with guest-user criteria that do not apply.
 if [ "$STACK" = "salesforce" ]; then
   if has_dir_anywhere "experiences" || has_dir_anywhere "networks"; then
-    OVERLAY="experience-cloud"
+    add_overlay "experience-cloud"
   fi
 fi
+
+# --- .NET overlay detection ---
+
+# Entity Framework and Blazor are large enough surfaces to review in their own
+# right, and neither is tied to one stack: a desktop app can use EF, and Blazor
+# can be hosted from more than one project type. Detect them rather than
+# taxing every WebForms or MVC review with criteria that do not apply.
+case "$STACK" in
+  aspnet-web|dotnet-desktop|dotnet-library)
+    if file_contains "DbContext" "*.cs"; then
+      add_overlay "entity-framework"
+    fi
+    if has_file "*.razor"; then
+      add_overlay "blazor"
+    fi
+    ;;
+esac
 
 # --- Scientific computing overlay detection ---
 
@@ -202,14 +242,14 @@ if [ "$STACK" != "unknown" ] && [ "$STACK" != "salesforce" ] && [ "$STACK" != "s
   fi
 
   if $SCIENTIFIC; then
-    OVERLAY="scientific-computing"
+    add_overlay "scientific-computing"
   fi
 fi
 
 # --- Output ---
 
-if [ -n "$OVERLAY" ]; then
-  echo "${STACK}+${OVERLAY}"
+if [ -n "$OVERLAYS" ]; then
+  echo "${STACK}+$(echo "$OVERLAYS" | tr ' ' '+')"
 else
   echo "$STACK"
 fi
