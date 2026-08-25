@@ -37,11 +37,15 @@ All are optional.
 | `--fable` | Add three deep-review lenses on Fable. Opt-in only. |
 | `--issues` | File one tracker issue per fix item after triage. Opt-in only. |
 | `--fix` | Run Phase 4 and apply the fix plan. |
+| `--rounds <n>` | Repeat review and fix up to `n` times. Default 1. Maximum 3. |
 | `--no-fix` | Stop after the fix plan. Report only. |
 
 Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
 `static-site`, `salesforce`, `python-tools`. Valid overlay:
 `scientific-computing`.
+
+`--rounds` above 1 requires `--fix`. Reviewing unchanged code a second time
+returns the same findings, so a round without a fix phase is wasted work.
 
 Never infer `--fable` or `--issues`. Run either only when the user passes the
 flag or asks for it in words. `--issues` writes to a real tracker, and an issue
@@ -202,6 +206,48 @@ Only when the user opted in.
 
 Nothing is pushed. Leave the commits local for the user to review.
 
+## Round control
+
+With `--rounds 1`, the default, you are done: go to Phase 5.
+
+Above 1, repeat **Phases 2, 3, 3b and 4** against the branch as the previous
+round left it. Phase 1 already resolved the repository, branch, base, stack and
+rotation, and none of those change.
+
+Append to the decision ledger after each round and inject it into the next
+round's Project Manager. See `references/orchestration.md`. Without it, round 2
+reverses round 1's arbitration and the loop argues with itself.
+
+### Stop conditions
+
+Check every one of these after each round. **Any single condition ends the
+loop.** Report which one fired.
+
+| # | Condition | Why |
+|---|---|---|
+| 1 | `--rounds` reached | Hard cap. Never exceed it, and never raise it yourself. |
+| 2 | No `blocking: true` items in the fix plan | Converged. This is the success case. |
+| 3 | Blocking count did not strictly decrease | No progress. Another round will not help. |
+| 4 | Build or tests failed after Phase 4 | Never iterate on your own breakage. |
+| 5 | A fix key applied in an earlier round reappears | Oscillation: two criteria are in conflict. |
+| 6 | Any Implementer reported `failed`, or the Consolidator failed | The tree is in an unknown state. |
+
+**Never loop until the findings reach zero.** Reviewers are instructed to report
+a finding even when the fix is trivial, and `low` severity covers style, naming
+and polish, so the supply is inexhaustible. Every round's fixes are new code
+that the next round reviews, so the finding count is not guaranteed to fall at
+all. Blocking-empty is the only criterion that can actually be met.
+
+### Before starting a multi-round run
+
+State the ceiling plainly, then begin:
+
+```
+Running up to <n> rounds. Each round launches <r> reviewers plus the Project
+Manager, and up to <g> Implementers. Worst case: <n * (r + 1 + g)> agents.
+Stops early on: no blocking items, no progress, a red build, or a repeated fix.
+```
+
 ## Phase 5: Report
 
 Print a summary:
@@ -212,6 +258,12 @@ Print a summary:
 | Persona | Model | Findings | Highest severity |
 |---------|-------|----------|------------------|
 
+Per round, when more than one ran:
+
+| Round | Findings | Fix items | Blocking | Applied | Build |
+|-------|----------|-----------|----------|---------|-------|
+
+**Rounds:** <completed> of <requested>, stopped because <condition>
 **Fix plan:** <N> findings merged into <M> items, <B> blocking
 **Issues:** <#numbers filed>   (only when --issues ran)
 **Applied:** <A> of <M>    (only when Phase 4 ran)
@@ -244,6 +296,11 @@ Then write the review record to project memory, following the template in
 - Issue creation fails partway: say exactly which items were filed and which
   were not, and do not describe the run as complete.
 - An Implementer fails: keep the other groups' commits, report the failed items
-  as unapplied. Do not retry into a dirty tree.
+  as unapplied. Do not retry into a dirty tree, and end the loop.
+- `--rounds` above 1 without `--fix`: say the combination does nothing and ask
+  whether to add `--fix`. Do not silently run one round.
+- `--rounds` above 3: cap it at 3, say you capped it, and continue.
+- The loop stops on a condition other than converged: say which one, and do not
+  describe the branch as reviewed clean.
 - The build fails in Phase 2: run every review anyway, and flag it at the top of
   the summary.

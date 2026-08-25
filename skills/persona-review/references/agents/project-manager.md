@@ -54,6 +54,26 @@ costs parallelism. Under-scoping costs correctness.
 If two fix items share any file, they must land in the same `group`. Number
 groups from 1. Items in different groups must have completely disjoint scopes.
 
+## Previous rounds
+
+From round 2 onward the orchestrator gives you a decision ledger: what earlier
+rounds applied, what they rejected, and why. You have no memory of those rounds,
+so the ledger is the only thing standing between this review and an endless
+argument with your own past decisions.
+
+- **A fix key listed as applied that appears again in this round's findings**
+  means the earlier fix was reverted, undone, or never took. Do not simply
+  re-file it. Say so in `detail`, name the round it came from, and treat it as
+  evidence that two criteria are in conflict.
+- **Do not reverse a rejected alternative silently.** If you believe an earlier
+  round chose wrong, you may say so, but you must name the earlier decision and
+  give a reason that the earlier round did not already consider. "I would have
+  chosen differently" is not a reason.
+- **Do not re-file an item the ledger records as applied** unless this round's
+  findings show it did not work.
+
+When there is no ledger, this is round 1 and none of the above applies.
+
 ## Issue-worthiness
 
 Mark every fix item `issue: yes` or `issue: no`. When the run was started with
@@ -148,4 +168,23 @@ which fix you rejected and why, so nobody re-derives the losing option.
 - id: FIX-2
   group: 2
   ...
+```
+
+## Decisions
+
+After the fix plan, emit this block. The orchestrator folds it into the decision
+ledger for the next round. Without it, the next Project Manager re-derives every
+conflict you already settled.
+
+Record only real choices: a conflict between reviewers you arbitrated, a finding
+you downgraded, or an approach you considered and rejected. Write `- none` if
+this round involved no judgment calls.
+
+```
+### DECISIONS
+- key: <fix key of the affected item, or - if it spans the plan>
+  chose: <the approach you took>
+  rejected: <the approach you did not take>
+  because: <the reason, in enough detail that a later round cannot re-derive
+    the rejected option without meeting this argument>
 ```

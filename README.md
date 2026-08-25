@@ -25,6 +25,7 @@ an overlay on top of any of those.
 /persona-review feature/123-my-branch --fable      # add three deep lenses
 /persona-review feature/123-my-branch --issues     # file an issue per fix item
 /persona-review feature/123-my-branch --fix        # apply the fix plan
+/persona-review feature/123-my-branch --fix --rounds 3   # review, fix, repeat
 /persona-review --repo E:/GitHub/OtherProject      # review a different repo
 ```
 
@@ -44,6 +45,32 @@ same files. The flow:
 | 4b | Consolidator, when several Implementers ran | **write** |
 
 Phases 3b and 4 run only when you opt in. Nothing is pushed.
+
+### Rounds
+
+`--rounds n` repeats review and fix up to `n` times, capped at 3. It requires
+`--fix`, since re-reviewing unchanged code returns the same findings.
+
+**It never loops until the findings reach zero.** Reviewers are told to report a
+finding even when the fix is trivial, and `low` severity covers style and
+naming, so that supply never runs out. Each round's fixes are also new code the
+next round reviews, so the finding count is not guaranteed to fall. The loop
+converges on **no blocking items**, which is the only criterion that can be met.
+
+Any one of these ends it early:
+
+| Stop | Meaning |
+|---|---|
+| No blocking items | Converged. The success case. |
+| Blocking count did not decrease | No progress; another round will not help. |
+| Build or tests red | Never iterate on your own breakage. |
+| A fix from an earlier round reappears | Oscillation: two criteria are in conflict. |
+| An Implementer or the Consolidator failed | The tree is in an unknown state. |
+
+Between rounds the orchestrator carries a **decision ledger** into the next
+Project Manager: what was applied, what was rejected, and why. Every agent runs
+with fresh context, so without it round 2 reverses round 1's arbitration and the
+loop argues with itself while looking productive.
 
 ### Issues
 

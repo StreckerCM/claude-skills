@@ -84,6 +84,8 @@ One agent, after every reviewer finishes.
 ### Missing
 <persona names that failed or were not in the rotation>
 
+<the decision ledger, verbatim — omit this whole section in round 1>
+
 ## Instructions
 1. Run `git diff <base-branch>...HEAD` for context.
 2. Merge and de-duplicate the findings above.
@@ -193,17 +195,14 @@ belongs here, where a partial failure can be retried without re-running triage.
 
 ### Deduplication
 
-Every body carries a stable key on its first line:
+Every body carries its fix key on the first line:
 
 ```
 <!-- persona-review-key: <branch>/<slug of title> -->
 ```
 
-Slug the title by lowercasing, replacing every run of non-alphanumerics with a
-hyphen, and trimming to 60 characters. The key is derived from the branch and
-the title, never from the `FIX-N` id, because ids are renumbered on every run.
-
-Before creating an item, look for its key in the bodies you listed in step 3.
+See **Fix keys** below for how the key is built. Before creating an item, look
+for its key in the bodies you listed in step 3.
 
 - **Key found, issue open:** do not create. Record the existing number and
   report it as already tracked.
@@ -266,6 +265,64 @@ numbers in the review record.
 If a create fails partway, report exactly which items were filed and which were
 not. A half-filed tracker described as complete is worse than a failed run.
 
+## Fix keys
+
+A fix key identifies one defect across rounds and across runs:
+
+```
+<branch>/<slug of title>
+```
+
+Slug the title by lowercasing it, replacing every run of non-alphanumeric
+characters with a hyphen, and trimming to 60 characters.
+
+The key is built from the branch and the title, **never from the `FIX-N` id**.
+Ids are renumbered on every run, so an id-based key would treat the same defect
+as new each round and would never detect a repeat.
+
+Two things depend on it:
+
+- **Issue deduplication** in Phase 3b, so re-reviewing a branch does not file the
+  same defect twice.
+- **Oscillation detection** in round control. A key that was applied in an
+  earlier round and comes back in a later one means the fix was reverted or
+  undone, which is the signature of two personas fighting over the same code.
+
+## The decision ledger
+
+Every agent starts with fresh context. Without a ledger, round 2's Project
+Manager has no idea what round 1 decided, so it can reverse a resolved conflict
+and the Implementer will dutifully undo the previous round's work. That is the
+most likely way a review-fix loop fails to converge while looking productive.
+
+Maintain the ledger yourself, appending after every round. Inject it into the
+Project Manager's prompt from round 2 onward.
+
+```
+### DECISION LEDGER
+
+## Round 1
+Applied:
+- <fix key> — FIX-1, commit <sha>, issue #<n>
+- <fix key> — FIX-4, commit <sha>
+
+Rejected alternatives:
+- <fix key>: widening the CLI except clause to catch ValueError. Rejected
+  because it would swallow genuine bugs and break the project's "plain
+  ValueError means bug" invariant. Chosen instead: validate at the parser
+  boundary.
+
+Not applied:
+- <fix key> — FIX-9, reported failed: <reason>
+
+## Round 2
+...
+```
+
+Build the "Rejected alternatives" entries from each round's Project Manager
+`### DECISIONS` block. Carry the reasoning across verbatim. A rejection without
+its reason invites the next round to re-derive the losing option.
+
 ## Data formats
 
 Three blocks move between phases. Pass them through verbatim; do not summarize
@@ -276,6 +333,7 @@ or reformat them, because the next agent parses the field names.
 | `### FINDINGS` | every reviewer | Project Manager |
 | `### FIX PLAN` | Project Manager | Implementer, issue filing, orchestrator |
 | `### FIX RESULT` | each Implementer | Consolidator, orchestrator |
+| `### DECISIONS` | Project Manager | the next round's decision ledger |
 
 Reviewer id prefixes: `IMPL`, `REV`, `TEST`, `SEC`, `UIUX`, and for the deep
 lenses `ARCH`, `ADV`, `SKEP`.
