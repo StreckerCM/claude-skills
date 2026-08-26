@@ -85,10 +85,16 @@ Any one of these ends it early:
 | Stop | Meaning |
 |---|---|
 | No blocking items | Converged. The success case. |
-| Blocking count did not decrease | No progress; another round will not help. |
+| No attempted blocking item was resolved | No progress; another round will not help. |
 | Build or tests red | Never iterate on your own breakage. |
-| A fix from an earlier round reappears | Oscillation: two criteria are in conflict. |
+| A fix has been applied and come back twice | Oscillation: two criteria are in conflict. |
+| New blocking items outnumber resolved ones | The loop is generating more work than it clears. |
 | An Implementer or the Consolidator failed | The tree is in an unknown state. |
+
+Blocking items are **classified, never just counted**. A second review pass
+normally finds pre-existing defects the first one missed, which raises the count
+on a branch that is converging. Only items a previous fix failed to resolve, or
+caused, count against the loop.
 
 Between rounds the orchestrator carries a **decision ledger** into the next
 Project Manager: what was applied, what was rejected, and why. Every agent runs

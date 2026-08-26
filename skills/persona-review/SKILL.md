@@ -238,6 +238,10 @@ Append to the decision ledger after each round and inject it into the next
 round's Project Manager. See `references/orchestration.md`. Without it, round 2
 reverses round 1's arbitration and the loop argues with itself.
 
+Record which items each round **attempted**, not only which it applied.
+Condition 3 is unanswerable without it: an item that was never attempted
+cannot be evidence that attempting things does not work.
+
 ### Stop conditions
 
 Check every one of these after each round. **Any single condition ends the
@@ -247,10 +251,42 @@ loop.** Report which one fired.
 |---|---|---|
 | 1 | `--rounds` reached | Hard cap. Never exceed it, and never raise it yourself. |
 | 2 | No `blocking: true` items in the fix plan | Converged. This is the success case. |
-| 3 | Blocking count did not strictly decrease | No progress. Another round will not help. |
+| 3 | Of the blocking items the previous round **attempted**, none is now resolved | No progress. Another round will not help. |
 | 4 | Build or tests failed after Phase 4 | Never iterate on your own breakage. |
-| 5 | A fix key applied in an earlier round reappears | Oscillation: two criteria are in conflict. |
+| 5 | A fix key has been applied and come back **twice** | Oscillation: two criteria are in conflict. |
 | 6 | Any Implementer reported `failed`, or the Consolidator failed | The tree is in an unknown state. |
+| 7 | `induced` blocking items outnumber the blocking items the previous round resolved | The loop is generating more work than it clears. |
+
+### Classify before you compare
+
+Never compare raw blocking counts between rounds. A count that rises is not
+evidence the loop is failing, and stopping on it wastes a converging branch.
+
+The Project Manager classifies every blocking item in its `### LOOP SIGNAL`
+block. Read that, not the totals:
+
+| Class | Meaning | Counts against the loop |
+|---|---|---|
+| `carried` | In an earlier plan, never attempted | No |
+| `discovered` | Pre-existing defect earlier rounds missed | No |
+| `ineffective` | The ledger records it applied, but the defect persists | Yes |
+| `induced` | Did not exist before a previous round's fix caused it | Yes |
+
+Only `ineffective` and `induced` say anything about whether the loop is working.
+`carried` items are work nobody has started. `discovered` items mean the review
+got better, which is the second pass doing its job.
+
+A real run bears this out: round 2 of the GeronimoPipe review went from 6
+blocking to 7, which a raw comparison reads as failure. The classification was
+three `carried`, three `discovered`, one `ineffective` and zero `induced` — a
+converging branch whose review was still widening. Stopping there would have
+been wrong, and the Project Manager's own recommendation was to run another
+round.
+
+**One `ineffective` item is a retry, not a stop.** A fix that did not achieve its
+goal gets one more attempt with a corrected approach. Condition 5 fires only when
+the same key has been applied and come back twice, which is when the retry itself
+has failed and two criteria are genuinely in conflict.
 
 **Never loop until the findings reach zero.** Reviewers are instructed to report
 a finding even when the fix is trivial, and `low` severity covers style, naming

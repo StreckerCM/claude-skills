@@ -74,6 +74,43 @@ argument with your own past decisions.
 
 When there is no ledger, this is round 1 and none of the above applies.
 
+## Loop signal
+
+From round 2 onward, classify every `blocking: true` item by where it came
+from. The orchestrator uses this to decide whether to run another round, and a
+raw count of blocking items cannot answer that question: a second review pass
+normally finds pre-existing defects the first one missed, which raises the
+count while the branch is converging.
+
+| Class | Meaning |
+|---|---|
+| `carried` | Appeared in an earlier round's plan and was never attempted |
+| `discovered` | Pre-existing defect no earlier round reported |
+| `ineffective` | The ledger records it applied, but this round shows the defect persists |
+| `induced` | Did not exist before a previous round's fix introduced it |
+
+`ineffective` and `induced` are the only two that say the loop is struggling.
+Be strict about them: do not label an item `ineffective` because a later
+reviewer wanted more than the fix promised. A fix that did what it said, where
+a follow-on gap remains, is `discovered`. Reserve `ineffective` for a fix that
+did not achieve its own stated goal, and verify that against the current file
+before you say so.
+
+Emit this after the fix plan:
+
+```
+### LOOP SIGNAL
+- id: FIX-27R
+  class: ineffective
+  key: <fix key>
+  why: <the evidence, verified against the current file>
+
+resolved-since-last-round: <ids the previous round attempted that are now gone>
+attempted-but-unresolved: <ids the previous round attempted that are still here>
+```
+
+Write `- none` for the item list when round 1 is the only round so far.
+
 ## Issue-worthiness
 
 Mark every fix item `issue: yes` or `issue: no`. When the run was started with

@@ -330,6 +330,7 @@ Project Manager's prompt from round 2 onward.
 ### DECISION LEDGER
 
 ## Round 1
+Attempted: FIX-1, FIX-4, FIX-9
 Applied:
 - <fix key> — FIX-1, commit <sha>, issue #<n>
 - <fix key> — FIX-4, commit <sha>
@@ -347,6 +348,10 @@ Not applied:
 ...
 ```
 
+Record **Attempted** as well as **Applied**. Stop condition 3 asks whether any
+attempted blocking item was resolved, and an item nobody tried says nothing
+about that.
+
 Build the "Rejected alternatives" entries from each round's Project Manager
 `### DECISIONS` block. Carry the reasoning across verbatim. A rejection without
 its reason invites the next round to re-derive the losing option.
@@ -362,6 +367,7 @@ or reformat them, because the next agent parses the field names.
 | `### FIX PLAN` | Project Manager | Implementer, issue filing, orchestrator |
 | `### FIX RESULT` | each Implementer | Consolidator, orchestrator |
 | `### DECISIONS` | Project Manager | the next round's decision ledger |
+| `### LOOP SIGNAL` | Project Manager | round control, from round 2 onward |
 
 Reviewer id prefixes: `IMPL`, `REV`, `TEST`, `SEC`, `UIUX`, and for the deep
 lenses `ARCH`, `ADV`, `SKEP`.
