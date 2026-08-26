@@ -29,8 +29,10 @@ personas: [implementer, reviewer, ui-ux-designer, security-auditor]
 
 ## UI/UX Designer Criteria
 - Responsive layout: test at mobile (375px), tablet (768px), desktop (1280px+)
-- Accessibility: alt text on images, skip navigation link, ARIA labels where needed
-- Lighthouse scores: aim for 90+ on Performance, Accessibility, Best Practices, SEO
+- Lighthouse: aim for 90+ on Performance, Best Practices and SEO. The
+  Accessibility score is deliberately excluded here: it measures only what is
+  machine-checkable and reads as a pass while keyboard traps and unlabelled
+  forms go undetected. The accessibility overlay covers that properly
 - Mobile UX: touch target sizes (min 44x44px), no horizontal scroll
 - Typography: readable font sizes (min 16px body), proper line height
 - Color contrast: WCAG AA minimum (4.5:1 for normal text)

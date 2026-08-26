@@ -44,7 +44,8 @@ Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
 `static-site`, `salesforce`, `python-tools`.
 
 Valid overlays: `scientific-computing`, `entity-framework`, `blazor`, and
-`experience-cloud`. More than one can apply at once.
+`experience-cloud`. More than one can apply at once. `accessibility` is also
+an overlay, but it is loaded from the rotation rather than detected.
 
 `--rounds` above 1 requires `--fix`. Reviewing unchanged code a second time
 returns the same findings, so a round without a fix phase is wasted work.
@@ -97,7 +98,12 @@ can be closed but never deleted.
    If the script prints `unknown`, stop and ask the user to pass `--stack`.
 
 5. **Load the profile.** Read `references/profiles/<base-stack>.md`, then
-   `references/profiles/<overlay>.md` for each active overlay. The YAML
+   `references/profiles/<overlay>.md` for each active overlay.
+
+   Also load `references/profiles/accessibility.md` whenever
+   `ui-ux-designer` is in the rotation. It is not detected from the code:
+   any project with a user interface has an accessibility surface, so the
+   rotation is the condition. The YAML
    frontmatter gives you `personas`, `rotation_size`, `build_command`, and
    `test_command`.
 

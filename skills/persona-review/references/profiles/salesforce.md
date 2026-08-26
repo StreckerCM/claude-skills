@@ -133,7 +133,10 @@ personas: [implementer, reviewer, tester, ui-ux-designer, security-auditor]
 - Mobile-first: test in the Salesforce mobile app, not just desktop
 - Loading states: show spinners during wire/imperative calls
 - Error handling UI: display user-friendly error messages from Apex exceptions
-- Accessibility: SLDS components are accessible by default, verify custom markup
+- Accessibility: standard SLDS components ship accessible markup, which is a
+  starting point and not a result. Composition, labelling and focus order are
+  still yours, and a custom component using only SLDS classes has none of the
+  behaviour
 - Screen flows: label every input, put validation messages next to the field
   they concern, and confirm the Previous/Next path makes sense
 - Screen flow error experience: a fault path that ends the flow with a raw

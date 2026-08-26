@@ -22,7 +22,8 @@ For each reviewer in the rotation:
 2. From the profile you already loaded, extract that persona's criteria section,
    such as `## Implementer Criteria`.
 3. For each active overlay, extract the same section from that overlay profile.
-   Several overlays can apply at once, and they are additive.
+   Several overlays can apply at once, and they are additive. When
+   `ui-ux-designer` is in the rotation, `accessibility.md` is one of them.
 4. Replace the `{{STACK_CRITERIA}}` placeholder with the criteria from step 2.
 5. Replace every `{{BASE_BRANCH}}` placeholder with the base branch resolved in
    Phase 1. Templates carry the placeholder rather than a literal `main`,

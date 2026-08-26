@@ -23,6 +23,21 @@ detected stack, and more than one can apply at once:
 | `blazor` | `.razor` components |
 | `scientific-computing` | numerical libraries, domain terms, or non-system native interop |
 | `experience-cloud` | Salesforce `experiences/` or `networks/` metadata |
+| `accessibility` | not detected: loaded whenever the rotation includes UI/UX |
+
+### Accessibility
+
+Any profile whose rotation includes `ui-ux-designer` also loads the
+`accessibility` overlay, targeting **WCAG 2.2 AA**. Findings cite the success
+criterion, so they can be looked up and survive a disagreement.
+
+It leads with the two things reviewers get wrong. Automated tools catch roughly
+a third of WCAG failures, so a clean axe or Lighthouse run is a floor and never
+a pass — it cannot tell whether alt text is meaningful, whether focus order
+matches the visual order, or whether an error is announced. And the first rule
+of ARIA is not to use ARIA: incorrect ARIA is worse than none, because it
+overrides semantics the browser already had. Stack notes cover web, XAML and
+Salesforce separately.
 
 ```
 /persona-review feature/123-my-branch
