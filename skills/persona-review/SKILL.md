@@ -31,6 +31,7 @@ All are optional.
 |---|---|
 | `<branch>` | Review this branch. Default: the current branch. |
 | `--repo <path>` | Review this repository. Default: the working directory. |
+| `--base <ref>` | Diff against this ref instead of the detected base branch. |
 | `--stack <stack>` | Skip detection and use this stack. |
 | `--overlay <overlay>` | Add overlay criteria on top of the detected stack. |
 | `--rotation <size>` | Run this many reviewers instead of the profile default. |
@@ -70,7 +71,8 @@ can be closed but never deleted.
    `gh pr list --head <branch> --json number --jq '.[0].number'`. An empty
    result means no PR exists.
 
-3. **Resolve the base branch.** Never assume `main`:
+3. **Resolve the base.** If `--base <ref>` was given, use it and skip detection.
+   Any git ref works: a branch, a tag, a commit sha, or `HEAD~4`. Otherwise:
 
    ```bash
    bash ~/.claude/skills/persona-review/scripts/detect-base.sh <repo>
@@ -80,8 +82,18 @@ can be closed but never deleted.
    whichever of `main`, `master`, `trunk`, `develop`, or `development` exists. A
    wrong base produces an empty diff, and an empty diff reads as a clean review.
 
-   If it prints `unknown`, or if `git -C <repo> diff --name-only <base>...HEAD`
-   is empty, stop and ask the user for the base branch. Do not review nothing
+   Then confirm there is something to review:
+
+   ```bash
+   git -C <repo> diff --name-only <base>...HEAD
+   ```
+
+   If that is empty, or detection printed `unknown`, **stop and offer
+   `--base`**. The common cause is a repository sitting on its own default
+   branch with no feature branch, where the base and the branch are the same
+   ref: there is no diff to review, but recent commits are still reviewable.
+   Show the last few commits and suggest a concrete range, such as
+   `--base HEAD~3`, rather than asking an open question. Never review nothing
    and call it clean.
 
 4. **Detect the stack.** If `--stack` was given, use it. Otherwise run:
@@ -290,8 +302,11 @@ Then write the review record to project memory, following the template in
 ## Error handling
 
 - Stack detection returns `unknown`: ask for `--stack`. Do not guess.
-- Base detection returns `unknown`, or the diff is empty: stop and ask. An empty
-  diff is not a clean review.
+- Base detection returns `unknown`, or the diff is empty: stop and offer
+  `--base <ref>` with a concrete suggestion. An empty diff is not a clean
+  review.
+- `--base` names a ref that does not resolve: say so and stop. Do not fall back
+  to the detected base, which would review a different range than was asked for.
 - No PR for the branch: skip every `gh pr comment` step and have each persona
   return its review as text. The findings blocks work the same way.
 - A reviewer fails: report which one, continue with the rest, and tell the

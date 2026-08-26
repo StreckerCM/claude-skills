@@ -21,9 +21,29 @@ For each reviewer in the rotation:
    frontmatter.
 2. From the profile you already loaded, extract that persona's criteria section,
    such as `## Implementer Criteria`.
-3. For each active overlay, extract the same section from that overlay profile.
-   Several overlays can apply at once, and they are additive. When
-   `ui-ux-designer` is in the rotation, `accessibility.md` is one of them.
+3. For each active overlay, extract **two** things. Several overlays can apply
+   at once, and they are additive. When `ui-ux-designer` is in the rotation,
+   `accessibility.md` is one of them.
+
+   a. That persona's own section, `## <Persona> Criteria (additional)`.
+
+   b. Every **shared section**: any `##` section in the overlay that is not a
+      `<Persona> Criteria` block, plus the intro paragraphs above the first
+      `##`. These carry the framing the criteria depend on and go to every
+      persona receiving that overlay.
+
+      Drop the opening "This is an additive overlay" paragraph. It is written
+      for you, not for a reviewer, and a sub-agent has no idea what an overlay
+      is. Keep everything after it.
+
+   Shared sections are not optional garnish. `accessibility.md` leads with
+   "automated tools find roughly a third of WCAG failures" and "the first rule
+   of ARIA is not to use ARIA". A reviewer given the checklist without that
+   framing reports a clean axe run as a pass, which is the exact failure the
+   overlay exists to prevent.
+
+   From a `## Stack notes` section, include only the `###` subsection matching
+   the detected base stack. A WPF reviewer does not need the Salesforce notes.
 4. Replace the `{{STACK_CRITERIA}}` placeholder with the criteria from step 2.
 5. Replace every `{{BASE_BRANCH}}` placeholder with the base branch resolved in
    Phase 1. Templates carry the placeholder rather than a literal `main`,
@@ -45,7 +65,7 @@ Test command: <test_command>
 <full text of the agent template, with {{STACK_CRITERIA}} replaced>
 
 ## Additional criteria (<overlay> overlay)
-<overlay criteria for this persona>
+<the overlay's shared sections, then this persona's criteria>
                             (one section per active overlay; omit if none)
 
 ## Instructions

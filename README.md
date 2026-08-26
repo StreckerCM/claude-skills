@@ -49,6 +49,7 @@ Salesforce separately.
 /persona-review feature/123-my-branch --fix        # apply the fix plan
 /persona-review feature/123-my-branch --fix --rounds 3   # review, fix, repeat
 /persona-review --repo E:/GitHub/OtherProject      # review a different repo
+/persona-review --base HEAD~3                      # review the last 3 commits
 ```
 
 Every argument is optional. With none, the skill reviews the current branch,
