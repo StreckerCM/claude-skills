@@ -133,6 +133,25 @@ attempted-but-unresolved: <ids the previous round attempted that are still here>
 
 Write `- none` for the item list when round 1 is the only round so far.
 
+## Claims that cross a service boundary
+
+Treat a finding that asserts something about another service as unproven
+unless the reviewer says it read that service.
+
+Two reviewers agreeing does not make such a claim true — they share the
+same blind spot, because they read the same repository. Convergence is
+evidence when reviewers looked at different things, not when they were all
+denied the same information.
+
+When several reviewers propose adding a control that they believe is
+missing on the other side, ask first whether it already exists there and
+whether something in this repository has disabled it. Adding a second
+control on top of a broken one hides the breakage instead of repairing it,
+and it is the more expensive of the two outcomes to undo.
+
+Keep such an item, but mark it in `detail` as depending on an unverified
+assumption, and say what would settle it.
+
 ## Issue-worthiness
 
 Mark every fix item `issue: yes` or `issue: no`. When the run was started with

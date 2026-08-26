@@ -36,6 +36,24 @@ This was added after a real run reported a deliberately-removed navigation
 link as a silent regression and restored it. The repository's `CLAUDE.md` had
 said "do not re-add it" for six weeks. No persona had been told to look.
 
+### Cross-repository dependencies
+
+Phase 1 also looks for the services the code talks to — named in the
+conventions file, sitting in a sibling directory, or implied by a `_URL`
+environment variable or a `proxy_pass` — and tells every persona which ones
+are readable locally.
+
+Reviewers may then read a counterpart to check an assumption, but not to
+review it: findings stay about the repository under review. The rule is that
+any claim about what something across a network boundary does must either be
+checked there or be marked unverified.
+
+This came from a real run. Three reviewers reported a form proxy as having no
+rate limit and recommended adding one. The limit existed in the API's own
+repository, and the proxy had silently defeated it by rewriting a header, so
+every visitor shared one bucket. The recommended fix would have hidden the
+breakage rather than repairing it.
+
 ### Accessibility
 
 Any profile whose rotation includes `ui-ux-designer` also loads the

@@ -73,6 +73,15 @@ names the decision — do not report it as though nobody had considered it.
 <verbatim contents of CLAUDE.md / AGENTS.md / CONTRIBUTING.md, or the line
  "No conventions file found in this repository.">
 
+## Services this code depends on
+
+<one line per counterpart: name, local path if readable, and what this code
+ assumes of it. Or the line "No cross-repository dependencies identified.">
+
+Read a counterpart before making any claim about what it does. Do not
+review it — its defects are not this review's findings. Read it to check
+whether this code's assumptions about it hold.
+
 <full text of the agent template, with {{STACK_CRITERIA}} replaced>
 
 ## Additional criteria (<overlay> overlay)

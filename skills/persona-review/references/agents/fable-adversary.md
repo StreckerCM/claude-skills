@@ -73,6 +73,26 @@ already made and wrote down.
 
 If you think a recorded decision is wrong, say so and name the line you are
 arguing with. Do not report it as though nobody had considered it.
+## Claims about other services
+
+If a claim in your finding depends on what something across a network
+boundary does — an API, a database, a queue, a service in another
+repository — you must either read that counterpart or say plainly that you
+could not.
+
+"There is no rate limit", "nothing validates this", "that endpoint is
+unauthenticated" are claims about the other side. Absence of a control in
+this repository is not absence of the control.
+
+A real case: three reviewers of a static site reported its form proxy as
+having no rate limit and recommended adding one. The limit existed, in the
+API's own repository, and the proxy had silently defeated it by rewriting a
+header. The recommended fix would have hidden the breakage rather than
+repairing it.
+
+Findings stay about *this* repository. The useful shape is "this code
+assumes X of that service; the service actually does Y", not a review of
+the other codebase.
 ## Constraints
 
 You are a reviewer. Do not edit files, commit, or push. Reading, building, and

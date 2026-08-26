@@ -123,7 +123,24 @@ can be closed but never deleted.
    exists, say so in the prompt rather than leaving it out silently, so a
    reviewer knows the absence is real and not an omission.
 
-6. **Load the profile.** Read `references/profiles/<base-stack>.md`, then
+6. **Find the services this code talks to.** A review confined to one
+   repository can be confidently wrong about anything that happens on the
+   other side of a network boundary. Look for counterparts, and note which
+   ones you can actually read:
+
+   - The conventions file naming another repository or path.
+   - Sibling directories of the repository under review.
+   - Environment variables ending `_URL`, `_API`, `_ENDPOINT`, `_HOST`.
+   - `proxy_pass`, `baseURL`, connection strings, or a fetch to an absolute
+     origin the project controls.
+
+   For each one found, record its name, its local path if it has one, and
+   what this code assumes of it. Tell the sub-agents which are readable and
+   which are not. A counterpart that exists but is not on this machine is
+   worth naming too: it tells a reviewer that a gap is real rather than an
+   omission.
+
+7. **Load the profile.** Read `references/profiles/<base-stack>.md`, then
    `references/profiles/<overlay>.md` for each active overlay.
 
    Also load `references/profiles/accessibility.md` whenever
@@ -133,7 +150,7 @@ can be closed but never deleted.
    frontmatter gives you `personas`, `rotation_size`, `build_command`, and
    `test_command`.
 
-7. **Resolve the rotation.** Start from the profile's `personas` list. If
+8. **Resolve the rotation.** Start from the profile's `personas` list. If
    `--rotation <n>` was given, drop reviewers from the **end of this priority
    order** until the list is `n` long:
 
@@ -145,7 +162,7 @@ can be closed but never deleted.
    `personas` list and does not count toward `rotation_size`. It always runs in
    Phase 3, because without it there is no fix plan.
 
-8. **Announce the plan** before launching anything:
+9. **Announce the plan** before launching anything:
 
    ```
    Starting persona review
@@ -154,6 +171,7 @@ can be closed but never deleted.
    Detected stack: <stack> (+ <overlay>)
    Profile: <display_name>
    Conventions: <files found, or "none found">
+   Services: <name -> local path, or "none found">
    Reviewers: <list>
    Deep lenses: Architect, Adversary, Skeptic     (only with --fable)
    Build: <build_command>
