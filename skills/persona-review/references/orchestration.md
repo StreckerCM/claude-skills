@@ -62,6 +62,17 @@ PR: #<pr-number>            (omit this line if there is no PR)
 Build command: <build_command>
 Test command: <test_command>
 
+## Project conventions
+
+The following is this repository's own instructions file. It records
+decisions the project has already made. Where it conflicts with your
+criteria, it wins, and a deliberate choice recorded here is not a defect.
+If you believe one of these decisions is wrong, say so as a finding that
+names the decision — do not report it as though nobody had considered it.
+
+<verbatim contents of CLAUDE.md / AGENTS.md / CONTRIBUTING.md, or the line
+ "No conventions file found in this repository.">
+
 <full text of the agent template, with {{STACK_CRITERIA}} replaced>
 
 ## Additional criteria (<overlay> overlay)
@@ -91,6 +102,10 @@ the standard rotation lacks.
 One agent, after every reviewer finishes.
 
 ```
+## Project conventions
+
+<the same verbatim conventions block given to the reviewers>
+
 <full text of references/agents/project-manager.md, {{STACK_CRITERIA}} replaced>
 
 ## Reviewer findings
@@ -138,6 +153,11 @@ Branch: <branch>
 Base branch: <base-branch>
 Build command: <build_command>
 Test command: <test_command>
+
+## Project conventions
+
+<the same verbatim conventions block; the Implementer needs it most, since
+ it is the one that changes code>
 
 <full text of references/agents/implementer-fixer.md, with {{FIX_GROUP}}
  replaced by this group's fix items, verbatim from the FIX PLAN>

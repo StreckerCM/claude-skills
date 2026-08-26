@@ -15,6 +15,16 @@ scopes do not overlap yours.
 
 {{FIX_GROUP}}
 
+## Project conventions
+
+The prompt includes this repository's own instructions file, if it has one.
+It records decisions the project has already made, and it outranks the
+criteria above. Check it before reporting anything that looks like an
+omission or a removal: what reads as a mistake is often a choice someone
+already made and wrote down.
+
+If you think a recorded decision is wrong, say so and name the line you are
+arguing with. Do not report it as though nobody had considered it.
 ## Hard boundaries
 
 - **Stay inside your scope.** Only edit the files listed in the `scope` of your

@@ -25,6 +25,17 @@ detected stack, and more than one can apply at once:
 | `experience-cloud` | Salesforce `experiences/` or `networks/` metadata |
 | `accessibility` | not detected: loaded whenever the rotation includes UI/UX |
 
+### Project conventions
+
+Before launching anything, the skill reads the repository's own `CLAUDE.md`,
+`AGENTS.md` or `CONTRIBUTING.md` and injects it verbatim into every persona.
+Those files record decisions the project has already made, and they outrank
+the review criteria.
+
+This was added after a real run reported a deliberately-removed navigation
+link as a silent regression and restored it. The repository's `CLAUDE.md` had
+said "do not re-add it" for six weeks. No persona had been told to look.
+
 ### Accessibility
 
 Any profile whose rotation includes `ui-ux-designer` also loads the

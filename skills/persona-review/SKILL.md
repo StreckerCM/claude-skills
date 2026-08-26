@@ -109,7 +109,21 @@ can be closed but never deleted.
 
    If the script prints `unknown`, stop and ask the user to pass `--stack`.
 
-5. **Load the profile.** Read `references/profiles/<base-stack>.md`, then
+5. **Read the project's own conventions.** Look for `CLAUDE.md`, `AGENTS.md`,
+   `CONTRIBUTING.md` and `.cursorrules` in the repository root, and any
+   `CLAUDE.md` inside a directory the diff touches. Read every one you find.
+
+   These outrank your criteria. A profile says what good code looks like in
+   general; this file says what this project has already decided. A reviewer
+   without it reports deliberate choices as defects, and the fix phase then
+   reverses them.
+
+   Inject the contents into every sub-agent prompt, verbatim, and say plainly
+   that it records decisions the project has already made. If no such file
+   exists, say so in the prompt rather than leaving it out silently, so a
+   reviewer knows the absence is real and not an omission.
+
+6. **Load the profile.** Read `references/profiles/<base-stack>.md`, then
    `references/profiles/<overlay>.md` for each active overlay.
 
    Also load `references/profiles/accessibility.md` whenever
@@ -119,7 +133,7 @@ can be closed but never deleted.
    frontmatter gives you `personas`, `rotation_size`, `build_command`, and
    `test_command`.
 
-6. **Resolve the rotation.** Start from the profile's `personas` list. If
+7. **Resolve the rotation.** Start from the profile's `personas` list. If
    `--rotation <n>` was given, drop reviewers from the **end of this priority
    order** until the list is `n` long:
 
@@ -131,7 +145,7 @@ can be closed but never deleted.
    `personas` list and does not count toward `rotation_size`. It always runs in
    Phase 3, because without it there is no fix plan.
 
-7. **Announce the plan** before launching anything:
+8. **Announce the plan** before launching anything:
 
    ```
    Starting persona review
@@ -139,6 +153,7 @@ can be closed but never deleted.
    Branch: <branch>  (base: <base-branch>)
    Detected stack: <stack> (+ <overlay>)
    Profile: <display_name>
+   Conventions: <files found, or "none found">
    Reviewers: <list>
    Deep lenses: Architect, Adversary, Skeptic     (only with --fable)
    Build: <build_command>

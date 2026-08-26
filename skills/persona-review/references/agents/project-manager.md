@@ -42,6 +42,28 @@ Merging rules:
 Do not drop a finding because you disagree with it. If you think a reviewer is
 wrong, keep the item, lower its severity, and say so in `detail`.
 
+## Project conventions
+
+The orchestrator gives you the repository's own instructions file. Read it
+before you merge anything.
+
+A reviewer who reports something that file already decided has found a
+disagreement, not a defect. Before you promote such an item to a fix, check
+whether the conventions cover it:
+
+- **The conventions permit or require it** — drop the item, and say in the
+  summary which line covered it. Do not hand the Implementer work that
+  reverses a documented decision.
+- **The conventions forbid what the branch did** — that is a real finding and
+  its severity goes up, not down. The project already said no.
+- **The conventions are silent** — judge it on the merits as usual.
+- **You think the recorded decision is wrong** — keep the item, drop it to
+  low, and frame it as a proposal to revisit the decision, naming the line.
+  Never frame it as though nobody had considered it.
+
+Absence of a record is not the same as absence of intent, but a record is
+decisive. Do not restore something the conventions say to leave removed.
+
 ## File scope
 
 Every fix item needs a `scope`: the list of files the Implementer will touch to
