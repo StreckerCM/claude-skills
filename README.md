@@ -25,6 +25,15 @@ detected stack, and more than one can apply at once:
 | `experience-cloud` | Salesforce `experiences/` or `networks/` metadata |
 | `accessibility` | not detected: loaded whenever the rotation includes UI/UX |
 
+### Build and test commands
+
+A profile's `build_command` and `test_command` are the usual case for a
+stack, not a promise about a given project. Phase 1 checks each one resolves
+before handing it to a reviewer, and tells the personas to skip the step when
+it does not. A plain Node service, for instance, often has `start` and `test`
+and no `build` — passing `npm run build` anyway makes every reviewer open its
+review with a build failure that is not real.
+
 ### Project conventions
 
 Before launching anything, the skill reads the repository's own `CLAUDE.md`,

@@ -59,8 +59,8 @@ Repository: <absolute repo path> — run every git and build command against it.
 Branch: <branch>
 Base branch: <base-branch>
 PR: #<pr-number>            (omit this line if there is no PR)
-Build command: <build_command>
-Test command: <test_command>
+Build command: <build_command, or "none for this stack - skip the build step">
+Test command: <test_command, or "none for this stack - skip the test step">
 
 ## Project conventions
 
@@ -91,8 +91,10 @@ whether this code's assumptions about it hold.
 ## Instructions
 1. Run `git diff <base-branch>...HEAD` to see every change on this branch.
 2. Review the changes against your criteria above.
-3. Run the build command and confirm the project builds.
-4. Run the test command, if one is defined.
+3. Run the build command and confirm the project builds, unless the header
+   above says there is none.
+4. Run the test command, unless the header above says there is none.
+   Do not invent a command the header did not give you.
 5. Post your review: `gh pr comment <pr-number> --body "<your review>"`.
    If there is no PR, return the review as your final text instead.
 6. End your response with the FINDINGS block. This is required. The Project

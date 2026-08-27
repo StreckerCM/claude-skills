@@ -141,16 +141,34 @@ can be closed but never deleted.
    omission.
 
 7. **Load the profile.** Read `references/profiles/<base-stack>.md`, then
-   `references/profiles/<overlay>.md` for each active overlay.
-
-   Also load `references/profiles/accessibility.md` whenever
-   `ui-ux-designer` is in the rotation. It is not detected from the code:
-   any project with a user interface has an accessibility surface, so the
-   rotation is the condition. The YAML
-   frontmatter gives you `personas`, `rotation_size`, `build_command`, and
+   `references/profiles/<overlay>.md` for each active overlay. The YAML
+   frontmatter gives you `personas`, `rotation_size`, `build_command` and
    `test_command`.
 
-8. **Resolve the rotation.** Start from the profile's `personas` list. If
+   Also load `references/profiles/accessibility.md` whenever `ui-ux-designer`
+   is in the rotation. It is not detected from the code: any project with a
+   user interface has an accessibility surface, so the rotation is the
+   condition.
+
+8. **Confirm the build and test commands actually run.** A profile's commands
+   are the usual case for a stack, not a promise about this project. Check each
+   before handing it to a reviewer:
+
+   - **Empty string** — the stack has no such step by design.
+   - **`npm run <script>`** — confirm the script exists in `package.json`. A
+     plain Node service typically has `start` and `test` and no `build`.
+   - **Anything else** — confirm the tool is on PATH and its target exists.
+
+   Where a command does not resolve, tell the sub-agents to skip that step
+   explicitly. Passing one that cannot work makes every reviewer run it, fail,
+   and open its review with a build failure — a false finding that then has to
+   be merged and ranked across the whole rotation, and that buries the real
+   ones.
+
+   Never silently substitute a different command. If the profile's command
+   looks wrong for this project, say so in the announcement and skip it.
+
+9. **Resolve the rotation.** Start from the profile's `personas` list. If
    `--rotation <n>` was given, drop reviewers from the **end of this priority
    order** until the list is `n` long:
 
@@ -162,7 +180,7 @@ can be closed but never deleted.
    `personas` list and does not count toward `rotation_size`. It always runs in
    Phase 3, because without it there is no fix plan.
 
-9. **Announce the plan** before launching anything:
+10. **Announce the plan** before launching anything:
 
    ```
    Starting persona review
@@ -174,8 +192,8 @@ can be closed but never deleted.
    Services: <name -> local path, or "none found">
    Reviewers: <list>
    Deep lenses: Architect, Adversary, Skeptic     (only with --fable)
-   Build: <build_command>
-   Tests: <test_command>
+   Build: <build_command, or "none for this stack">
+   Tests: <test_command, or "none for this stack">
    Fix phase: enabled / report only
    ```
 
