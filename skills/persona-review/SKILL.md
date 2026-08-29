@@ -29,6 +29,7 @@ All are optional.
 
 | Argument | Effect |
 |---|---|
+| `--help` | Print this argument summary and stop. Runs nothing. |
 | `<branch>` | Review this branch. Default: the current branch. |
 | `--repo <path>` | Review this repository. Default: the working directory. |
 | `--base <ref>` | Diff against this ref instead of the detected base branch. |
@@ -54,6 +55,37 @@ returns the same findings, so a round without a fix phase is wasted work.
 Never infer `--fable` or `--issues`. Run either only when the user passes the
 flag or asks for it in words. `--issues` writes to a real tracker, and an issue
 can be closed but never deleted.
+
+`--help` takes precedence over every other argument and every other phase. If it
+is present, print the sections below and **stop** — do not resolve the
+repository, detect the stack, or launch an agent. Someone asking what the skill
+does has not asked it to review anything, and a review that starts anyway costs
+them a rotation of agents they did not want.
+
+Print the argument table above, the valid stacks and overlays, then this:
+
+> **Default run:** detect the stack, run the profile's rotation read-only, and
+> print a de-duplicated fix plan. Nothing is written and no issue is filed
+> unless `--fix` or `--issues` is passed.
+>
+> | Phase | What runs | Needs |
+> |---|---|---|
+> | 1 | Resolve repo, branch, base, conventions, cross-repo services, stack, rotation | — |
+> | 2 | Reviewers in parallel, read-only; each emits `### FINDINGS` | — |
+> | 3 | Project Manager merges them into one `### FIX PLAN` and `### DECISIONS` | — |
+> | 3b | File one tracker issue per fix item | `--issues` |
+> | 4 | One Implementer per disjoint file group applies the plan | `--fix` |
+> | 4b | Consolidator reconciles the groups | several Implementers |
+> | 5 | Report | — |
+>
+> Examples:
+>
+> ```
+> /persona-review                      review the current branch, report only
+> /persona-review --stack salesforce   skip detection
+> /persona-review --fix --rounds 3     review and fix, up to three rounds
+> /persona-review --issues --no-fix    triage and file, change nothing
+> ```
 
 ## Phase 1: Detect and load
 
