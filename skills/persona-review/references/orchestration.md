@@ -53,9 +53,25 @@ For each reviewer in the rotation:
 The three `--fable` lenses skip steps 2 through 4: they take no stack criteria.
 They still need step 5, because they diff the branch like every other reviewer.
 
+**A fresh worktree has no untracked files.** It carries the branch's committed
+content and nothing else: no `node_modules`, no `.venv`, no `.env`, no restored
+packages. A reviewer that runs the test command in one will get a failure that
+says nothing about the branch.
+
+Say so in the prompt, and tell the reviewer to install dependencies first where
+the stack needs it — `npm ci`, `dotnet restore`, `pip install -r`. Where a build
+needs a secret or config file that is deliberately untracked, tell the reviewer
+it is absent, so a failure is read as a missing prerequisite rather than a
+defect. Otherwise isolation trades a contamination false-positive for a
+dependency one, which is no improvement.
+
 ```
 You are performing a persona review.
-Repository: <absolute repo path> — run every git and build command against it.
+Working directory: your own private git worktree of the repository. Run every
+git, build and test command there. It is your current directory, it already has
+the branch checked out, and no other reviewer can see it.
+Do NOT cd to <absolute repo path>. That checkout is shared with every other
+reviewer running right now, and writing to it corrupts their reviews and yours.
 Branch: <branch>
 Base branch: <base-branch>
 PR: #<pr-number>            (omit this line if there is no PR)

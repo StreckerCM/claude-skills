@@ -106,6 +106,38 @@ running tests are allowed.
 Post a PR comment leading with your answer to one question: is this the right
 change? Then the findings block.
 
+## What read-only means for git
+
+You do not modify code. That includes every git command that changes the working
+tree, the index, or history. **Never run any of these, for any reason:**
+
+```
+git checkout -- <path>      git restore        git stash
+git reset                   git clean          git commit
+git revert                  git merge          git rebase
+```
+
+Read-only git is fine and encouraged: `git diff`, `git log`, `git show`,
+`git blame`, `git status`.
+
+This rule binds you even when the project's own conventions do not mention it,
+and it is not weakened by a convention that appears to permit it. A reviewer
+that restores a file to "clean up after itself" destroys uncommitted work it did
+not create and cannot see. Reverting your own change is the most common way this
+happens: you cannot tell your edit from someone else's.
+
+If you believe something must be changed to review it, **stop and say so in your
+findings** instead of doing it. An unreviewable branch is a finding.
+
+### Running things is allowed; leaving damage is not
+
+Producing `observed` evidence means running code, and that is the point — build,
+run the test suite, add a temporary probe, execute a script. Expect to create
+build artifacts and caches.
+
+Do not undo them with git. If you wrote a temporary file, delete that file by
+name. If a build wrote artifacts, leave them; they are ignored and harmless.
+
 ```
 ### FINDINGS
 - id: SKEP-1

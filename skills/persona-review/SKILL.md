@@ -102,9 +102,15 @@ Print the argument table above, the valid stacks and overlays, then this:
    rather than changing directory. Confirm it is a git repository before going
    further.
 
-   Pass the absolute repository path into every sub-agent prompt. Sub-agents do
-   not inherit your working directory, and a reviewer that runs `git diff` in
-   the wrong place reports a clean pass on an empty diff.
+   Sub-agents do not inherit your working directory, and one that runs
+   `git diff` in the wrong place reports a clean pass on an empty diff. So every
+   sub-agent must be told where to work — but not all of them the same place:
+
+   - **Phase 2 reviewers** run in their own worktree and work in their current
+     directory. Give them the absolute path only to say explicitly that it is
+     shared and must not be touched.
+   - **Phase 4 Implementers and the Consolidator** run against the real
+     repository at the absolute path. Their whole purpose is to commit to it.
 
 2. **Resolve the branch.** Use the branch argument if given, otherwise
    `git -C <repo> branch --show-current`. Get the PR number with
@@ -250,6 +256,33 @@ Launch every reviewer in the rotation concurrently: send them as multiple tool
 calls in one message. With `--fable`, launch the three deep lenses in the same
 message. They must not receive the standard reviewers' findings, because seeing
 that list anchors them to what was already caught.
+
+**Give every reviewer its own worktree.** Pass `isolation: "worktree"` on each
+Agent call.
+
+Read-only agents look like they do not need this, and that is the trap. Reviewers
+run things — that is what `observed` evidence requires — and running things
+writes: build output, caches, temporary probes. Concurrent reviewers sharing one
+checkout then contaminate each other, and the failures are indistinguishable from
+real findings. Observed in a real run: one reviewer reported a false `FAILED`
+from another's half-built state, and a second saw a constant mid-revert and
+quarantined its own probes over it.
+
+A contaminated review is worse than a missing one. It produces confident findings
+about a state the branch was never in, and nothing downstream can tell those from
+the genuine ones.
+
+Worktrees cost a few hundred milliseconds and some disk each, and are removed
+automatically if the agent leaves them unchanged. That is cheap next to one
+fabricated critical finding.
+
+Reviewers must not be given the ability to undo anything. The templates forbid
+every tree-mutating git command by name, because injecting the project's own
+conventions is not sufficient: in a real run a Tester ran `git checkout --` on a
+repository whose `CLAUDE.md` forbids it by name, with that text supplied verbatim
+in its prompt. An agent reads injected conventions as context about the project,
+not as a constraint on its own tool use. The constraint has to be in its own
+instructions.
 
 | Round 2 agents | Template | Model |
 |---|---|---|
