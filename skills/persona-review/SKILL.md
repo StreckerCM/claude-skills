@@ -315,6 +315,15 @@ Only when the user opted in.
 5. **Verify.** Run the build and test commands yourself. Report the result
    honestly, including failure.
 
+An Implementer may return `mechanism-corrected` or `not-reproduced` instead of
+`applied`. Neither is a failure — both mean it reproduced the item before
+touching it, which is the check working. Only `failed` trips stop condition 6.
+
+Treat `not-reproduced` as **resolved** for round control: the item is off the
+list because there was nothing to fix, not because it was ignored. Say so in the
+report rather than silently dropping it, and never re-file it next round as
+though it were new.
+
 Nothing is pushed. Leave the commits local for the user to review.
 
 ## Round control
@@ -342,7 +351,7 @@ loop.** Report which one fired.
 |---|---|---|
 | 1 | `--rounds` reached | Hard cap. Never exceed it, and never raise it yourself. |
 | 2 | No `blocking: true` items in the fix plan | Converged. This is the success case. |
-| 3 | Of the blocking items the previous round **attempted**, none is now resolved | No progress. Another round will not help. |
+| 3 | Of the blocking items the previous round **attempted**, none is now resolved | No progress. Another round will not help. An item returned `not-reproduced` counts as resolved. |
 | 4 | Build or tests failed after Phase 4 | Never iterate on your own breakage. |
 | 5 | A fix key has been applied and come back **twice** | Oscillation: two criteria are in conflict. |
 | 6 | Any Implementer reported `failed`, or the Consolidator failed | The tree is in an unknown state. |
@@ -414,6 +423,7 @@ Per round, when more than one ran:
 **Fix plan:** <N> findings merged into <M> items, <B> blocking
 **Issues:** <#numbers filed>   (only when --issues ran)
 **Applied:** <A> of <M>    (only when Phase 4 ran)
+**Disproved:** <N> item(s) did not reproduce   (only when any did)
 **Build:** pass / fail     **Tests:** pass / fail / not-run
 
 **Stack:** <stack>  **Branch:** <branch>  **PR:** #<number>

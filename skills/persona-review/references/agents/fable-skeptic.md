@@ -115,7 +115,32 @@ change? Then the findings block.
   title: <one line>
   detail: <the premise you are questioning, and the evidence>
   fix: <the alternative you propose, including "do nothing" where that is right>
+  evidence: observed | traced | asserted
 ```
+
+## Evidence
+
+Every finding carries an `evidence:` field. It records **how you know**, not how
+confident you feel.
+
+| Class | Means | Put in `detail` |
+|---|---|---|
+| `observed` | You ran something and saw it fail | the command and its real output |
+| `traced` | You followed the path in the source and can name every step | the steps, in order |
+| `asserted` | Pattern, convention, or experience; not traced end to end | what you did not check |
+
+Use `asserted` freely. It is a legitimate finding, and it is often right about
+*what* is wrong while being wrong about *why*.
+
+That distinction is the entire point of the field. A real problem with a wrong
+mechanism produces a fix that reads correctly, passes review, closes the issue,
+and changes nothing. This has happened repeatedly in real runs of this review:
+one round opened eighteen issues of which three named the wrong mechanism for a
+real defect.
+
+Never write `observed` because you are sure. If you did not run it, it is not
+observed.
+
 
 Severity here means confidence that the premise is wrong, not how broken the
 code is. Reserve `critical` for a change that should not be merged as conceived.

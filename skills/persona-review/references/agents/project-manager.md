@@ -243,10 +243,32 @@ which fix you rejected and why, so nobody re-derives the losing option.
   title: <one line>
   detail: <what is wrong, and which proposed fix you chose if they conflicted>
   fix: <the concrete change the Implementer should make>
+  evidence: observed | traced | asserted
 - id: FIX-2
   group: 2
   ...
 ```
+
+
+## Carrying evidence forward
+
+Each source finding states how it was reached. Carry the **weakest** class of
+any finding you merged into the item: two `asserted` findings that agree are
+still `asserted`. Agents sharing an input share its blind spots, so agreement
+between them is not verification.
+
+Merging findings is where a wrong mechanism becomes invisible. Once several ids
+sit behind one `detail` paragraph, nothing downstream can tell whether the
+paragraph was run or guessed. The field is what preserves it.
+
+Do not downgrade severity because evidence is `asserted`. An unverified security
+hole is still critical. Severity is how bad it is if true; evidence is how well
+we know it is true. They are independent, and collapsing them loses both.
+
+Where the merged findings disagree about the mechanism, say so in `detail` and
+mark the item `asserted` even if one source claimed `observed`. A contested
+mechanism is exactly the case the Implementer must reproduce before touching.
+
 
 ## Decisions
 

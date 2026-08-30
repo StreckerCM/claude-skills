@@ -283,6 +283,7 @@ Project Manager wrote them for a reader who was not in the review.
 | **Blocking** | yes, fix before merge / no |
 | **Scope** | `<file>` `<file>` |
 | **Reported by** | <sources> |
+| **Evidence** | observed - run and seen / traced - followed in source / asserted - not verified |
 
 ## What is wrong
 
@@ -291,6 +292,12 @@ Project Manager wrote them for a reader who was not in the review.
 ## Proposed fix
 
 <fix>
+
+<!-- Include this paragraph only when evidence is `traced` or `asserted`. -->
+> **The mechanism above has not been observed failing.** The problem may still
+> be real while this explanation of it is wrong. Reproduce it before fixing —
+> write the failing test first, or add a probe and watch it fire. A fix applied
+> to a wrong mechanism reads correctly, closes the issue, and changes nothing.
 
 ---
 

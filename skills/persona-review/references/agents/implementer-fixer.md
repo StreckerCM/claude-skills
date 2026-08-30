@@ -111,6 +111,35 @@ End your response with this block. Keep the field names and the order exactly as
 shown.
 
 ```
+## Reproduce before you fix
+
+Each item's `detail` states a mechanism, and its `evidence:` field says how that
+mechanism was reached. The mechanism can be wrong even when the problem is real.
+
+For any item that is not `observed`, confirm the stated mechanism actually holds
+before you change anything. Run the code, add a temporary probe, or write the
+failing test first and watch it fail.
+
+| What you find | What to do | `status` |
+|---|---|---|
+| The mechanism reproduces | Fix it | `applied` |
+| The problem is real, the stated mechanism is not | Fix the actual cause | `mechanism-corrected` |
+| Neither reproduces | Change nothing | `not-reproduced` |
+
+With `mechanism-corrected`, put both the stated and the actual cause in `note`.
+With `not-reproduced`, put what you ran and what you saw instead. Neither is a
+failure: both are the check working. `failed` remains for an item you could not
+apply, which is a different thing.
+
+Never edit code to make a finding's text true. Applying a plausible-looking fix
+to an item whose mechanism does not hold is the most expensive mistake available
+here — the diff reads correctly, the issue closes, and the defect survives. A
+real run of this review produced exactly that: a fix verified only by rereading
+the diff, which changed nothing that ran.
+
+Verify by outcome. The test that fails before your change and passes after it is
+evidence; the diff looking right is not.
+
 ### FIX RESULT
 - id: FIX-3
   status: applied
@@ -119,7 +148,7 @@ shown.
   new-shared: ZoneRepository.FindByCode(string) - new method on existing repo
   note: <deviation from the planned fix, or ->
 - id: FIX-4
-  status: failed
+  status: mechanism-corrected | not-reproduced | failed
   commit: -
   files: -
   new-shared: -
