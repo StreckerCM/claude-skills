@@ -36,7 +36,7 @@ All are optional.
 | `--stack <stack>` | Skip detection and use this stack. |
 | `--overlay <overlay>` | Add overlay criteria on top of the detected stack. |
 | `--rotation <size>` | Run this many reviewers instead of the profile default. |
-| `--fable` | Add three deep-review lenses on Fable. Opt-in only. |
+| `--fable` | Add 3 extra reviewers on Fable: Architect, Adversary, Skeptic. Opt-in only. |
 | `--issues` | File one tracker issue per fix item after triage. Opt-in only. |
 | `--fix` | Run Phase 4 and apply the fix plan. |
 | `--rounds <n>` | Repeat review and fix up to `n` times. Default 1. Maximum 3. |
@@ -51,6 +51,14 @@ an overlay, but it is loaded from the rotation rather than detected.
 
 `--rounds` above 1 requires `--fix`. Reviewing unchanged code a second time
 returns the same findings, so a round without a fix phase is wasted work.
+
+`--fable` adds reviewers to Phase 2 and nothing else. It does not imply `--fix`,
+does not add rounds, and combines with `--no-fix` perfectly well — that pairing
+is the deepest read-only review available. The three are lenses, not rounds.
+
+`--fix` and `--no-fix` together: **`--no-fix` wins.** Say so, then report only.
+Refusing to write when the user asked for both readings is recoverable; writing
+is not.
 
 Never infer `--fable` or `--issues`. Run either only when the user passes the
 flag or asks for it in words. `--issues` writes to a real tracker, and an issue
@@ -440,7 +448,9 @@ Then write the review record to project memory, following the template in
 - An Implementer fails: keep the other groups' commits, report the failed items
   as unapplied. Do not retry into a dirty tree, and end the loop.
 - `--rounds` above 1 without `--fix`: say the combination does nothing and ask
-  whether to add `--fix`. Do not silently run one round.
+  whether to add `--fix`. Do not silently run one round. If `--no-fix` was
+  passed explicitly, do not ask — the user already answered. Run one round and
+  say the extra rounds were dropped.
 - `--rounds` above 3: cap it at 3, say you capped it, and continue.
 - The loop stops on a condition other than converged: say which one, and do not
   describe the branch as reviewed clean.
