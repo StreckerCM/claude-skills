@@ -254,7 +254,10 @@ def main(argv: list[str]) -> int:
     except (ForgeError, OSError, urllib.error.URLError) as exc:
         print(json.dumps({"error": str(exc)}))
         return 1
-    print(json.dumps(out, ensure_ascii=False))
+    # ASCII-only JSON: on Windows, piped stdout uses the console code page
+    # (cp1252), and non-ASCII text in an issue body would reach the reader as
+    # bytes it cannot decode. \uXXXX escapes survive any encoding.
+    print(json.dumps(out))
     return 0
 
 
