@@ -154,8 +154,8 @@ whether this code's assumptions about it hold.
 4. Run the test command, unless the header above says there is none.
    Do not invent a command the header did not give you.
 5. Post your review: `gh pr comment <pr-number> --body "<your review>"`.
-   If there is no PR line in the header, return the review as your final text
-   instead.
+   If there is no PR line in the header, or the header says
+   "PR comments: orchestrator", return the review as your final text instead.
 6. End your response with the FINDINGS block. This is required. The Project
    Manager cannot act on findings that are not in it.
 
@@ -287,20 +287,49 @@ deleted. The flag is the authorization. Never infer it.
 You file, not the Project Manager. It decides *what* becomes an issue; the loop
 belongs here, where a partial failure can be retried without re-running triage.
 
+### Forges
+
+Phase 1 recorded the forge with `scripts/forge.py detect`. Every step below has
+a GitHub form and a Gitea form; use the one that matches. Gitea covers Forgejo
+too, which serves the same API.
+
+On Gitea, `forge.py` reads the token from `GITEA_TOKEN` or from the `tea` CLI's
+config file, and never prints it. Do not run `tea` itself: it can block on a
+version check or a prompt and hang the run. Every `forge.py` command prints
+JSON, and `{"error": ...}` with exit 1 on failure.
+
+On Gitea, reviewers do not post PR comments: they have no `gh` that reaches it.
+Put `PR comments: orchestrator` in their header so they return text, then post
+each review yourself with
+`forge.py comment <repo> <pr-number> --body-file <path>`. In snapshot mode there
+are no PR comments on either forge.
+
 ### Before you file
 
-1. **Confirm the remote.** `git -C <repo> remote get-url origin`. No GitHub
-   remote means no issues: say so and continue to Phase 5.
-2. **Confirm auth.** `gh auth status`. If it fails, stop and tell the user
-   rather than half-filing.
+1. **Confirm the forge.** `unknown` means no issues: say so and continue to
+   Phase 5.
+2. **Confirm auth.** GitHub: `gh auth status`. Gitea: the `issues` call in the
+   next step fails with an auth error if the token is missing or wrong. Either
+   way, stop and tell the user rather than half-filing.
 3. **List what is already there**, so a second review of the same branch does
    not duplicate the first:
 
    ```bash
-   gh issue list --repo <slug> --label persona-review --state all      --limit 200 --json number,title,body
+   # GitHub
+   gh issue list --repo <slug> --label persona-review --state all \
+     --limit 200 --json number,title,body
+   # Gitea (paginates for you)
+   python ~/.claude/skills/persona-review/scripts/forge.py issues <repo> --label persona-review
    ```
 
-4. **Create any missing labels.** Ignore "already exists" errors.
+4. **Create any missing labels.** On GitHub, ignore "already exists" errors.
+   On Gitea, one call creates only the missing ones:
+
+   ```bash
+   python ~/.claude/skills/persona-review/scripts/forge.py labels <repo> \
+     persona-review:5319e7 severity:high:d93f0b severity:medium:fbca04 \
+     severity:low:c2e0c6 blocking:b60205
+   ```
 
    | Label | Colour | Purpose |
    |---|---|---|
@@ -380,8 +409,17 @@ Write the body to a file and pass `--body-file`. Bodies contain backticks,
 quotes, and code fences that shell quoting mangles.
 
 ```bash
-gh issue create --repo <slug> --title "<title>"   --body-file <path> --label "persona-review,severity:high,blocking"
+# GitHub
+gh issue create --repo <slug> --title "<title>" \
+  --body-file <path> --label "persona-review,severity:high,blocking"
+# Gitea: repeat --label per label; it prints {"number": N, "url": ...}
+python ~/.claude/skills/persona-review/scripts/forge.py create <repo> \
+  --title "<title>" --body-file <path> \
+  --label persona-review --label severity:high --label blocking
 ```
+
+On Gitea, `create` refuses a label that does not exist rather than dropping it,
+so run step 4 first.
 
 ### Afterwards
 

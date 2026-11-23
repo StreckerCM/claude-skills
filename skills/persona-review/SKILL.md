@@ -128,10 +128,22 @@ Print the argument table above, the valid stacks and overlays, then this:
    - **Phase 4 Implementers and the Consolidator** run against the real
      repository at the absolute path. Their whole purpose is to commit to it.
 
-2. **Resolve the branch.** Use the branch argument if given, otherwise
-   `git -C <repo> branch --show-current`. Get the PR number with
-   `gh pr list --head <branch> --json number --jq '.[0].number'`. An empty
-   result means no PR exists.
+2. **Resolve the branch and the forge.** Use the branch argument if given,
+   otherwise `git -C <repo> branch --show-current`. Then find out what hosts
+   the repository:
+
+   ```bash
+   python ~/.claude/skills/persona-review/scripts/forge.py detect <repo>
+   ```
+
+   It prints JSON with `forge` set to `github`, `gitea`, or `unknown`, and the
+   `owner/name` slug. Record both; Phase 3b and every PR step depend on them.
+
+   Get the PR number for the branch. An empty result means no PR exists.
+
+   - **github:** `gh pr list --head <branch> --json number --jq '.[0].number'`
+   - **gitea:** `python ~/.claude/skills/persona-review/scripts/forge.py pr <repo> <branch>`
+   - **unknown:** treat it as no PR.
 
 3. **Resolve the scope.** With `--path` or `--feature`, this is a snapshot
    review: follow **Resolve a snapshot scope** below instead of this step, and
@@ -254,6 +266,7 @@ Print the argument table above, the valid stacks and overlays, then this:
    Starting persona review
    Repository: <absolute repo path>
    Branch: <branch>  (base: <base-branch>)
+   Forge: <github | gitea | unknown> <owner/name>   PR: #<number, or none>
    Scope: diff against <base-branch>
           or: snapshot of <label>, <N> files, ~<L> lines (+ <C> context files)
    Detected stack: <stack> (+ <overlay>)
@@ -414,8 +427,9 @@ the user has not seen.
 ## Phase 3b: File the issues
 
 Only with `--issues`. The Project Manager decides *what* becomes an issue, via
-the `issue:` field on each fix item. You run the `gh` calls, because a loop that
-fails halfway is retried here without re-running triage.
+the `issue:` field on each fix item. You run the tracker calls (`gh` on GitHub,
+`scripts/forge.py` on Gitea), because a loop that fails halfway is retried here
+without re-running triage.
 
 The fix plan is the right unit. Filing per reviewer would open the same defect
 once per persona that found it.
@@ -591,8 +605,10 @@ Then write the review record to project memory, following the template in
 - The Project Manager fails: show the raw findings and stop. Never build a fix
   plan yourself, never run Phase 4 without one, and never file issues from raw
   findings. Untriaged findings would file the same defect once per persona.
-- No GitHub remote, or `gh auth status` fails, with `--issues`: report it and
-  continue. Do not half-file.
+- The forge is `unknown`, or its auth fails (`gh auth status` on GitHub, a
+  `forge.py` error on Gitea), with `--issues`: report it and continue. Do not
+  half-file, and never fall back to running the `tea` CLI, which can block on a
+  prompt.
 - Issue creation fails partway: say exactly which items were filed and which
   were not, and do not describe the run as complete.
 - An Implementer fails: keep the other groups' commits, report the failed items
