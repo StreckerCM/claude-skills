@@ -45,13 +45,42 @@ For each reviewer in the rotation:
    From a `## Stack notes` section, include only the `###` subsection matching
    the detected base stack. A WPF reviewer does not need the Salesforce notes.
 4. Replace the `{{STACK_CRITERIA}}` placeholder with the criteria from step 2.
-5. Replace every `{{BASE_BRANCH}}` placeholder with the base branch resolved in
-   Phase 1. Templates carry the placeholder rather than a literal `main`,
-   because a wrong base yields an empty diff that looks like a clean review.
+5. Replace the `{{REVIEW_SCOPE}}` placeholder with the rendering for the mode
+   Phase 1 resolved. See **Review scope** below. Templates carry the
+   placeholder rather than a literal `git diff main...HEAD`, because a wrong
+   base yields an empty diff that looks like a clean review, and because
+   snapshot mode has no diff at all.
 6. Assemble the prompt below.
 
 The three `--fable` lenses skip steps 2 through 4: they take no stack criteria.
-They still need step 5, because they diff the branch like every other reviewer.
+They still need step 5, because they read the scope like every other reviewer.
+
+### Review scope
+
+Render `{{REVIEW_SCOPE}}` as exactly one of these.
+
+**Diff mode** — the default:
+
+```
+Read the branch changes: `git diff <base-branch>...HEAD`.
+```
+
+**Snapshot mode** — `--path` or `--feature`:
+
+```
+Read every file listed under "Primary scope" in the header, in full. This is
+not a diff review. The code is reviewed as it stands, and every defect in it is
+in scope, however old it is. Wherever these instructions say "the diff",
+"changed code", "changes on this branch", or "the branch", read "the primary
+scope". Read the files under "Context" only to understand the primary scope:
+report a defect in a context file only when it makes the primary code wrong.
+Do not use `git diff` to decide what to review; there is no base to diff
+against.
+```
+
+The substitution note is not optional. The templates were written for diffs, and
+a reviewer that meets "for each changed function" with no diff in hand either
+reviews nothing or goes looking for a base on its own.
 
 **A fresh worktree has no untracked files.** It carries the branch's committed
 content and nothing else: no `node_modules`, no `.venv`, no `.env`, no restored
@@ -73,10 +102,18 @@ the branch checked out, and no other reviewer can see it.
 Do NOT cd to <absolute repo path>. That checkout is shared with every other
 reviewer running right now, and writing to it corrupts their reviews and yours.
 Branch: <branch>
-Base branch: <base-branch>
-PR: #<pr-number>            (omit this line if there is no PR)
+Base branch: <base-branch>  (diff mode only)
+PR: #<pr-number>            (omit this line if there is no PR, and in snapshot mode)
 Build command: <build_command, or "none for this stack - skip the build step">
 Test command: <test_command, or "none for this stack - skip the test step">
+
+Review scope: <"diff against <base-branch>", or "snapshot: <scope label>">
+Primary scope:              (snapshot mode only)
+<one repository-relative path per line>
+Context:                    (snapshot mode only; omit if empty)
+<one repository-relative path per line>
+Focus:                      (snapshot mode, only when the user named a symbol)
+<the class, method, or feature name, and the file it lives in>
 
 ## Project conventions
 
@@ -105,14 +142,15 @@ whether this code's assumptions about it hold.
                             (one section per active overlay; omit if none)
 
 ## Instructions
-1. Run `git diff <base-branch>...HEAD` to see every change on this branch.
-2. Review the changes against your criteria above.
+1. <the {{REVIEW_SCOPE}} rendering, again>
+2. Review that code against your criteria above.
 3. Run the build command and confirm the project builds, unless the header
    above says there is none.
 4. Run the test command, unless the header above says there is none.
    Do not invent a command the header did not give you.
 5. Post your review: `gh pr comment <pr-number> --body "<your review>"`.
-   If there is no PR, return the review as your final text instead.
+   If there is no PR line in the header, return the review as your final text
+   instead.
 6. End your response with the FINDINGS block. This is required. The Project
    Manager cannot act on findings that are not in it.
 
@@ -129,6 +167,9 @@ the standard rotation lacks.
 One agent, after every reviewer finishes.
 
 ```
+<the same Branch / PR / Review scope / Primary scope / Context / Focus header
+ the reviewers received>
+
 ## Project conventions
 
 <the same verbatim conventions block given to the reviewers>
@@ -151,11 +192,12 @@ One agent, after every reviewer finishes.
 <the decision ledger, verbatim — omit this whole section in round 1>
 
 ## Instructions
-1. Run `git diff <base-branch>...HEAD` for context.
+1. For context: <the {{REVIEW_SCOPE}} rendering>
 2. Merge and de-duplicate the findings above.
 3. Assign a file scope and a group number to every fix item. Items sharing any
    file must share a group.
-4. Post the PR comment, then emit the FIX PLAN block.
+4. Post the PR comment if the header has a PR line, then emit the FIX PLAN
+   block.
 
 You are read-only. Do not edit files, do not commit, do not push.
 ```
@@ -177,7 +219,10 @@ One agent per group, launched concurrently:
 You are applying fixes.
 Repository: <absolute repo path> — run every git and build command against it.
 Branch: <branch>
-Base branch: <base-branch>
+Base branch: <base-branch>  (diff mode only)
+Review scope: <the same line the reviewers received>
+Primary scope:              (snapshot mode only; the same list the reviewers received)
+<one repository-relative path per line>
 Build command: <build_command>
 Test command: <test_command>
 
@@ -291,6 +336,7 @@ Project Manager wrote them for a reader who was not in the review.
 ```markdown
 <!-- persona-review-key: <branch>/<slug> -->
 > Raised by an automated persona review of `<branch>` on <YYYY-MM-DD>.
+> Scope: <"branch diff", or the snapshot scope label>.
 > Fix plan item **<FIX-N>**, group <n>.
 
 | | |
@@ -446,6 +492,7 @@ type: project
 
 **Date:** <YYYY-MM-DD>
 **PR:** #<number>
+**Scope:** <diff against <base>, or snapshot: <scope label> (<N> files)>
 **Stack:** <stack>
 **Reviewers:** <list, noting whether --fable ran>
 **Recommendation:** <merge recommendation>

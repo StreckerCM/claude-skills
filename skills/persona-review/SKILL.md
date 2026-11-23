@@ -1,12 +1,19 @@
 ---
 name: persona-review
-description: Run a technology-aware persona code review. Auto-detects the project's tech stack and launches specialized sub-agent reviewers (Implementer, Reviewer, Tester, UI/UX Designer, Security Auditor, Project Manager), then optionally applies the fixes. Use when asked to review code, run a persona review, or launch sub-agent reviewers.
+description: Run a technology-aware persona code review. Auto-detects the project's tech stack and launches specialized sub-agent reviewers (Implementer, Reviewer, Tester, UI/UX Designer, Security Auditor, Project Manager), then optionally applies the fixes. Reviews a branch diff by default, or a named feature, class, directory, or whole application as it stands. Use when asked to review code, run a persona review, review a feature/class/module/app, or launch sub-agent reviewers.
 ---
 
 # Persona review
 
 Detect the project's tech stack, load the matching review profile, and run
-independent sub-agent personas over the branch.
+independent sub-agent personas over the code.
+
+The review has two modes:
+
+- **Diff mode**, the default: review what the branch changed against its base.
+- **Snapshot mode**, with `--path` or `--feature`: review a feature, class,
+  directory, or the whole application as it stands, with no diff. Every defect
+  in the scope is in scope, however old.
 
 **Reviewers report. Only the Implementer writes code.** Every persona except the
 Implementer is read-only. The Project Manager merges their findings into one
@@ -33,6 +40,8 @@ All are optional.
 | `<branch>` | Review this branch. Default: the current branch. |
 | `--repo <path>` | Review this repository. Default: the working directory. |
 | `--base <ref>` | Diff against this ref instead of the detected base branch. |
+| `--path <path>` | Snapshot mode: review this file, directory, or glob as it stands. Repeatable. `--path .` reviews the whole application. |
+| `--feature "<name>"` | Snapshot mode: find the code that implements this feature, class, or symbol, confirm the file list, and review it. |
 | `--stack <stack>` | Skip detection and use this stack. |
 | `--overlay <overlay>` | Add overlay criteria on top of the detected stack. |
 | `--rotation <size>` | Run this many reviewers instead of the profile default. |
@@ -48,6 +57,10 @@ Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
 Valid overlays: `scientific-computing`, `entity-framework`, `blazor`, and
 `experience-cloud`. More than one can apply at once. `accessibility` is also
 an overlay, but it is loaded from the rotation rather than detected.
+
+`--path` and `--feature` combine: the paths seed the search for the feature.
+Either one with `--base` is a contradiction, because a diff and a snapshot are
+different reviews. Stop and ask which was meant.
 
 `--rounds` above 1 requires `--fix`. Reviewing unchanged code a second time
 returns the same findings, so a round without a fix phase is wasted work.
@@ -78,7 +91,7 @@ Print the argument table above, the valid stacks and overlays, then this:
 >
 > | Phase | What runs | Needs |
 > |---|---|---|
-> | 1 | Resolve repo, branch, base, conventions, cross-repo services, stack, rotation | — |
+> | 1 | Resolve repo, branch, scope (diff base or snapshot files), conventions, cross-repo services, stack, rotation | — |
 > | 2 | Reviewers in parallel, read-only; each emits `### FINDINGS` | — |
 > | 3 | Project Manager merges them into one `### FIX PLAN` and `### DECISIONS` | — |
 > | 3b | File one tracker issue per fix item | `--issues` |
@@ -90,6 +103,9 @@ Print the argument table above, the valid stacks and overlays, then this:
 >
 > ```
 > /persona-review                      review the current branch, report only
+> /persona-review --path src/Orders    review a directory as it stands
+> /persona-review --feature checkout   find the checkout code and review it
+> /persona-review --path . --no-fix    review the whole application
 > /persona-review --stack salesforce   skip detection
 > /persona-review --fix --rounds 3     review and fix, up to three rounds
 > /persona-review --issues --no-fix    triage and file, change nothing
@@ -117,7 +133,11 @@ Print the argument table above, the valid stacks and overlays, then this:
    `gh pr list --head <branch> --json number --jq '.[0].number'`. An empty
    result means no PR exists.
 
-3. **Resolve the base.** If `--base <ref>` was given, use it and skip detection.
+3. **Resolve the scope.** With `--path` or `--feature`, this is a snapshot
+   review: follow **Resolve a snapshot scope** below instead of this step, and
+   skip base detection entirely. Otherwise, resolve the base.
+
+   If `--base <ref>` was given, use it and skip detection.
    Any git ref works: a branch, a tag, a commit sha, or `HEAD~4`. Otherwise:
 
    ```bash
@@ -139,8 +159,9 @@ Print the argument table above, the valid stacks and overlays, then this:
    branch with no feature branch, where the base and the branch are the same
    ref: there is no diff to review, but recent commits are still reviewable.
    Show the last few commits and suggest a concrete range, such as
-   `--base HEAD~3`, rather than asking an open question. Never review nothing
-   and call it clean.
+   `--base HEAD~3`, rather than asking an open question. If the user wants the
+   code reviewed rather than recent changes, offer `--path` or `--feature`
+   too. Never review nothing and call it clean.
 
 4. **Detect the stack.** If `--stack` was given, use it. Otherwise run:
 
@@ -157,7 +178,8 @@ Print the argument table above, the valid stacks and overlays, then this:
 
 5. **Read the project's own conventions.** Look for `CLAUDE.md`, `AGENTS.md`,
    `CONTRIBUTING.md` and `.cursorrules` in the repository root, and any
-   `CLAUDE.md` inside a directory the diff touches. Read every one you find.
+   `CLAUDE.md` inside a directory the diff or the snapshot scope touches. Read
+   every one you find.
 
    These outrank your criteria. A profile says what good code looks like in
    general; this file says what this project has already decided. A reviewer
@@ -232,6 +254,8 @@ Print the argument table above, the valid stacks and overlays, then this:
    Starting persona review
    Repository: <absolute repo path>
    Branch: <branch>  (base: <base-branch>)
+   Scope: diff against <base-branch>
+          or: snapshot of <label>, <N> files, ~<L> lines (+ <C> context files)
    Detected stack: <stack> (+ <overlay>)
    Profile: <display_name>
    Conventions: <files found, or "none found">
@@ -242,6 +266,57 @@ Print the argument table above, the valid stacks and overlays, then this:
    Tests: <test_command, or "none for this stack">
    Fix phase: enabled / report only
    ```
+
+### Resolve a snapshot scope
+
+Snapshot mode replaces step 3. It produces three things every prompt carries: a
+**label**, a **primary** file list, and a **context** file list. Reviewers
+report on primary files. They read context files only to understand them.
+
+1. **`--path`.** Expand each argument with `git -C <repo> ls-files -- <path>`.
+   Use tracked files only, because the reviewers' worktrees contain nothing
+   else. A path that matches nothing is an error: stop and say which one, and
+   never drop it silently. Exclude vendored and generated code
+   (`node_modules/`, `bin/`, `obj/`, `dist/`, lock files, `*.min.*`, generated
+   migrations) unless the user named it explicitly.
+
+2. **`--feature`.** The name is a search, not a path, so you resolve it and the
+   user confirms it. Search for the term and its likely spellings (class, file,
+   route, component, and config names) with Grep and Glob, seeded by any
+   `--path`. For a broad feature, delegate the sweep to one Explore agent and
+   keep only its file list.
+
+   - A **class or symbol** gives a primary scope of the file that defines it.
+     Its direct tests, and the callers that show how it is used, go into
+     context. Record the symbol under `Focus`, so reviewers concentrate on it
+     even when its file holds other things.
+   - A **feature** gives a primary scope of every file that implements it:
+     entry point, handlers, models, and views. Its tests go into context for
+     every persona except the Tester, for whom they are primary.
+
+   Then **show the list and ask the user to confirm it**. A feature resolved to
+   the wrong files produces a confident review of code nobody asked about. If
+   the search finds nothing, stop and ask for a path. Never review an empty
+   scope.
+
+3. **`--path .`, the whole application.** Primary is every tracked source file
+   after the exclusions above.
+
+4. **Check the size.** Count primary files and lines. Above roughly 60 files or
+   10,000 lines, a reviewer cannot read it all and will sample without saying
+   so. Say so, then offer to narrow the scope or to split it into one run per
+   top-level module. Proceed at full size only if the user confirms.
+
+5. **Check for uncommitted work.** Run
+   `git -C <repo> status --porcelain -- <primary files>`. Reviewers work in
+   worktrees of `HEAD`, so uncommitted edits are invisible to them. If any
+   exist, name the files and ask whether to commit first or review `HEAD`.
+
+6. **Label it.** The label is the feature name, the symbol, or the path, such
+   as `checkout`, `OrderService`, `src/Orders`, or `whole application`.
+
+Snapshot mode does not post PR comments. A whole-file review attached to an
+unrelated PR is noise. Every persona returns its review as text instead.
 
 ## Phase 2: Review, in parallel, read-only
 
@@ -296,7 +371,8 @@ instructions.
 | Skeptic (`--fable`) | `references/agents/fable-skeptic.md` | fable |
 
 The deep lenses take no `{{STACK_CRITERIA}}` substitution, but every template,
-theirs included, needs `{{BASE_BRANCH}}` replaced.
+theirs included, needs `{{REVIEW_SCOPE}}` replaced with the diff-mode or
+snapshot-mode rendering from `references/orchestration.md`.
 
 Collect each agent's `### FINDINGS` block. If an agent returns no parsable
 block, note it and continue.
@@ -334,18 +410,21 @@ Only when the user opted in.
 
 1. **Verify the groups are disjoint.** Two groups sharing a file is a planning
    error. Merge them rather than running them in parallel.
-2. **Record the base commit** with `git -C <repo> rev-parse HEAD`. The
+2. **Never commit fixes to the default branch.** Snapshot reviews usually run
+   on it. If the current branch is the repository's default branch, create
+   `persona-review/<label-slug>` from it, say so, and work there.
+3. **Record the base commit** with `git -C <repo> rev-parse HEAD`. The
    consolidation step needs it.
-3. **Launch one Implementer per group**, concurrently, using
+4. **Launch one Implementer per group**, concurrently, using
    `references/agents/implementer-fixer.md` with `{{FIX_GROUP}}` replaced by
    that group's items, each carrying its issue number when Phase 3b filed one.
    One group means one agent and no consolidation.
-4. **Consolidate.** If two or more Implementers ran, launch the Consolidator
+5. **Consolidate.** If two or more Implementers ran, launch the Consolidator
    from `references/agents/consolidator.md`, giving it the base commit and every
    Implementer's result block including its `new-shared` list. Parallel agents
    cannot see each other, so this is what catches two of them writing the same
    method twice.
-5. **Verify.** Run the build and test commands yourself. Report the result
+6. **Verify.** Run the build and test commands yourself. Report the result
    honestly, including failure.
 
 An Implementer may return `mechanism-corrected` or `not-reproduced` instead of
@@ -364,8 +443,9 @@ Nothing is pushed. Leave the commits local for the user to review.
 With `--rounds 1`, the default, you are done: go to Phase 5.
 
 Above 1, repeat **Phases 2, 3, 3b and 4** against the branch as the previous
-round left it. Phase 1 already resolved the repository, branch, base, stack and
-rotation, and none of those change.
+round left it. Phase 1 already resolved the repository, branch, scope, stack and
+rotation, and none of those change, except one: in snapshot mode, any file an
+Implementer created joins the primary scope, so the next round reviews it.
 
 Append to the decision ledger after each round and inject it into the next
 round's Project Manager. See `references/orchestration.md`. Without it, round 2
@@ -460,6 +540,7 @@ Per round, when more than one ran:
 **Build:** pass / fail     **Tests:** pass / fail / not-run
 
 **Stack:** <stack>  **Branch:** <branch>  **PR:** #<number>
+**Scope:** diff against <base>, or snapshot of <label> (<N> files)
 ```
 
 State plainly whether the branch is ready or which items are outstanding. Report
@@ -475,6 +556,11 @@ Then write the review record to project memory, following the template in
 - Base detection returns `unknown`, or the diff is empty: stop and offer
   `--base <ref>` with a concrete suggestion. An empty diff is not a clean
   review.
+- `--path` matches no tracked file, or `--feature` finds nothing: say which
+  and stop. An empty scope is not a clean review.
+- The user rejects the resolved feature file list: take their correction and
+  show the list again. Do not launch until they confirm it.
+- `--base` together with `--path` or `--feature`: ask which review was meant.
 - `--base` names a ref that does not resolve: say so and stop. Do not fall back
   to the detected base, which would review a different range than was asked for.
 - No PR for the branch: skip every `gh pr comment` step and have each persona
