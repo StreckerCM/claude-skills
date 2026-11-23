@@ -351,6 +351,27 @@ Worktrees cost a few hundred milliseconds and some disk each, and are removed
 automatically if the agent leaves them unchanged. That is cheap next to one
 fabricated critical finding.
 
+**`isolation: "worktree"` only works when the repository under review is the
+session's own.** The harness builds the worktree from the session's working
+directory, not from `--repo`. Observed in a real run: every reviewer of
+`--repo E:/GitHub/macOS-messages-tools`, launched from `claude-skills`, landed
+in a worktree of `claude-skills`, found none of its scope, and reported itself
+blocked. A reviewer that did not check would have reviewed the wrong code.
+
+So compare the two first. If `git -C <repo> rev-parse --show-toplevel` differs
+from the session's repository root, create the worktrees yourself, one per
+reviewer, outside both repositories:
+
+```bash
+git -C <repo> worktree add --detach <tmp>/persona-review-<slug>/<persona> HEAD
+```
+
+Launch those reviewers **without** `isolation`, and give each its own absolute
+worktree path as the working directory, with an instruction to `cd` there
+first. After Phase 3, remove them with `git -C <repo> worktree remove --force
+<path>` for each, then `git -C <repo> worktree prune`. A detached worktree with
+no commits holds nothing worth keeping.
+
 Reviewers must not be given the ability to undo anything. The templates forbid
 every tree-mutating git command by name, because injecting the project's own
 conventions is not sufficient: in a real run a Tester ran `git checkout --` on a

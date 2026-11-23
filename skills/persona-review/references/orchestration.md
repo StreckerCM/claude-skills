@@ -94,6 +94,11 @@ it is absent, so a failure is read as a missing prerequisite rather than a
 defect. Otherwise isolation trades a contamination false-positive for a
 dependency one, which is no improvement.
 
+When you created the worktrees yourself because `--repo` is not the session's
+repository (see Phase 2 in `SKILL.md`), replace the first `Working directory`
+sentence with: "Working directory: `<absolute worktree path>`, your own private
+git worktree of `<repo>` at `<sha>`. `cd` there first." The rest is unchanged.
+
 ```
 You are performing a persona review.
 Working directory: your own private git worktree of the repository. Run every
