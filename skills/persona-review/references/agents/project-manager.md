@@ -182,11 +182,29 @@ every critical and normally every high.
 ## Review Process
 
 1. {{REVIEW_SCOPE}}
-2. Read every findings block the orchestrator gave you.
-3. Check whether `docs/features/*/tasks.md` exists and is current.
-4. Merge and de-duplicate as described above.
-5. Assign scopes and groups.
-6. Post the PR comment, then emit the fix plan.
+2. Read every findings block the orchestrator gave you, whether pasted or as
+   files to read.
+3. If the orchestrator gave you other runs' plans, read them before merging
+   anything. See **Other runs** below.
+4. Check whether `docs/features/*/tasks.md` exists and is current.
+5. Merge and de-duplicate as described above.
+6. Assign scopes and groups.
+7. Post the PR comment, then emit the fix plan, and write it to the plan file
+   the orchestrator named.
+
+## Other runs
+
+A large scope is sometimes split into runs (a backend and a front end), each
+with its own Project Manager. You may be given the plans of runs that finished
+before yours. Their items are filed first.
+
+A defect at the boundary is seen by both runs under different titles, and
+nothing downstream can tell the two titles describe one defect. You are the
+only check. When an earlier plan already owns a defect, do not create a second
+item. When it owns only part, and says what it left out, create an item for
+the remainder alone, scoped to your own files, and name the earlier item by
+title in `detail`. List everything you left to another run in your summary
+under "Covered by another run".
 
 ## Stack-Specific Review Criteria
 

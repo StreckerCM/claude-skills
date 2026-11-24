@@ -54,8 +54,8 @@ All are optional.
 Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
 `static-site`, `salesforce`, `python-tools`.
 
-Valid overlays: `scientific-computing`, `entity-framework`, `blazor`, and
-`experience-cloud`. More than one can apply at once. `accessibility` is also
+Valid overlays: `scientific-computing`, `entity-framework`, `blazor`,
+`experience-cloud`, and `python-web`. More than one can apply at once. `accessibility` is also
 an overlay, but it is loaded from the rotation rather than detected.
 
 `--path` and `--feature` combine: the paths seed the search for the feature.
@@ -223,7 +223,7 @@ Print the argument table above, the valid stacks and overlays, then this:
 7. **Load the profile.** Read `references/profiles/<base-stack>.md`, then
    `references/profiles/<overlay>.md` for each active overlay. The YAML
    frontmatter gives you `personas`, `rotation_size`, `build_command` and
-   `test_command`.
+   `test_command`. An overlay may also carry `adds_personas`; see step 9.
 
    Also load `references/profiles/accessibility.md` whenever `ui-ux-designer`
    is in the rotation. It is not detected from the code: any project with a
@@ -248,7 +248,10 @@ Print the argument table above, the valid stacks and overlays, then this:
    Never silently substitute a different command. If the profile's command
    looks wrong for this project, say so in the announcement and skip it.
 
-9. **Resolve the rotation.** Start from the profile's `personas` list. If
+9. **Resolve the rotation.** Start from the profile's `personas` list, then
+   append every persona named in an active overlay's `adds_personas` that is
+   not already there. `python-web` adds `ui-ux-designer`: a web app has a user
+   interface even when its base stack does not. If
    `--rotation <n>` was given, drop reviewers from the **end of this priority
    order** until the list is `n` long:
 
@@ -267,6 +270,7 @@ Print the argument table above, the valid stacks and overlays, then this:
    Repository: <absolute repo path>
    Branch: <branch>  (base: <base-branch>)
    Forge: <github | gitea | unknown> <owner/name>   PR: #<number, or none>
+   Run dir: <absolute path, outside both repositories>
    Scope: diff against <base-branch>
           or: snapshot of <label>, <N> files, ~<L> lines (+ <C> context files)
    Detected stack: <stack> (+ <overlay>)
@@ -318,7 +322,8 @@ report on primary files. They read context files only to understand them.
 4. **Check the size.** Count primary files and lines. Above roughly 60 files or
    10,000 lines, a reviewer cannot read it all and will sample without saying
    so. Say so, then offer to narrow the scope or to split it into one run per
-   top-level module. Proceed at full size only if the user confirms.
+   top-level module (see **Split runs** below). Proceed at full size only if
+   the user confirms.
 
 5. **Check for uncommitted work.** Run
    `git -C <repo> status --porcelain -- <primary files>`. Reviewers work in
@@ -331,11 +336,47 @@ report on primary files. They read context files only to understand them.
 Snapshot mode does not post PR comments. A whole-file review attached to an
 unrelated PR is noise. Every persona returns its review as text instead.
 
+### Split runs
+
+When the user splits a scope (backend and front end, or one run per module),
+each part is its own run: its own label, worktrees, run directory, rotation and
+Project Manager. The parts overlap at their boundaries, and that overlap is
+where duplicates come from. In a real split of a web app, four of the
+front-end findings were the same defects as backend findings, seen from the
+template side, under different titles. Filed blindly they would have been four
+duplicate issues that no deduplication key catches, because the key is the
+title.
+
+- **Phase 2 runs in parallel.** Launch every run's reviewers in one message.
+  They are independent, and worktrees keep them apart.
+- **Phase 3 runs in sequence.** Start the first run's Project Manager as soon
+  as its reviewers finish. Give each later Project Manager every earlier run's
+  `plan.md` and the instruction in `references/orchestration.md` under
+  **Other runs' plans**. It leaves a defect to the run that already owns it,
+  and creates an item only for the part that run left out.
+- **File in the same order,** first run first, so a later run's items can name
+  the earlier issue numbers.
+- **Cross-link afterwards.** Where a later item completes an earlier one (the
+  template half of a server fix), comment on both issues with the other's
+  number. On Gitea use `forge.py comment`; on GitHub, `gh issue comment`.
+- **Report each run separately** in Phase 5, then the cross-run links.
+
 ## Phase 2: Review, in parallel, read-only
 
 Sub-agents get fresh context and **cannot read this skill's files**. You must
 read each agent template yourself and inject its full text into the Agent tool's
-`prompt`. A prompt that tells the sub-agent to go read a file will fail.
+`prompt`. A prompt that tells the sub-agent to go read a skill file will fail.
+
+Run artefacts are different. Create a **run directory** outside both
+repositories, `<tmp>/persona-review-<label-slug>/run/`, and pass its absolute
+path in every prompt. Reviewers write their findings there and the Project
+Manager reads them and writes its plan there, as
+`references/orchestration.md` describes. These are files the run itself
+creates, at a path the prompt states, so reading them works. Passing them by
+file is what lets a run of five reviewers and 80 findings reach the Project
+Manager intact: pasted inline, that volume is where transcription errors
+creep in, and a long Project Manager reply can come back truncated or
+persisted to a file you then have to parse.
 
 Read `references/orchestration.md` for the prompt template and the substitution
 steps. Follow it literally.
@@ -408,17 +449,21 @@ The deep lenses take no `{{STACK_CRITERIA}}` substitution, but every template,
 theirs included, needs `{{REVIEW_SCOPE}}` replaced with the diff-mode or
 snapshot-mode rendering from `references/orchestration.md`.
 
-Collect each agent's `### FINDINGS` block. If an agent returns no parsable
-block, note it and continue.
+Collect each agent's `### FINDINGS` block from
+`<run-dir>/findings-<persona>.md`. Use the copy in its reply only if the file
+is missing, and say so. If an agent produced neither, note it and continue.
 
 ## Phase 3: Merge into a fix plan
 
 Launch the Project Manager alone, after every reviewer has finished. Inject
-`references/agents/project-manager.md` plus **every findings block from Phase
-2**, verbatim, labeled by persona.
+`references/agents/project-manager.md` in full, and list **every findings file
+from Phase 2** by absolute path, labelled by persona, for it to read. In a
+split run, also list the earlier runs' `plan.md` files.
 
-It returns a `### FIX PLAN`: findings de-duplicated into fix items, each with a
-`scope` of files and a `group` number. Items sharing a file share a group.
+It returns a `### FIX PLAN`, and writes the same block to `<run-dir>/plan.md`:
+findings de-duplicated into fix items, each with a `scope` of files and a
+`group` number. Items sharing a file share a group. Read `plan.md` rather than
+its reply; that file is what Phase 3b and Phase 4 consume.
 
 Print the summary table, then follow `--fix` or `--no-fix`. With neither flag,
 stop here, show the plan, and ask whether to apply it. Do not apply a fix plan
@@ -434,10 +479,24 @@ without re-running triage.
 The fix plan is the right unit. Filing per reviewer would open the same defect
 once per persona that found it.
 
-Read `references/orchestration.md` for the body template, the deduplication key,
-and the label set. Blocking items are filed first so they take the lowest
-numbers. Record each issue number against its fix item: Phase 4 needs it for
-`refs #<number>`, and Phase 5 lists them.
+File with the bundled script, which builds every body from the template,
+skips items whose key is already tracked, creates missing labels, and files
+blocking items first so they take the lowest numbers:
+
+```bash
+python ~/.claude/skills/persona-review/scripts/file-plan.py \
+  --repo <repo> --plan <run-dir>/plan.md --branch <branch> \
+  --scope "<one-line description of the reviewed scope>" --dry-run
+```
+
+Run it with `--dry-run` first and show the count. Then run it without, which
+prints a JSON mapping of fix id to issue number and writes the same mapping to
+`<run-dir>/issues.json`. Record each number against its fix item: Phase 4
+needs it for `refs #<number>`, and Phase 5 lists them. It works on GitHub
+through `gh` and on Gitea through `forge.py`.
+
+`references/orchestration.md` documents the body template, the deduplication
+key and the label set the script implements.
 
 ## Phase 4: Apply the fixes
 

@@ -204,6 +204,34 @@ case "$STACK" in
     ;;
 esac
 
+# --- Python web app overlay detection ---
+
+# python-tools criteria are written for command-line tools. A Python project
+# that serves HTTP has an attack surface and a user interface those criteria
+# never mention, so detect the framework and add the web overlay.
+# Dependency files are checked first; a direct import is the fallback for
+# projects that vendor or install the framework another way.
+python_web_dep() {
+  local f
+  for f in requirements.txt requirements-dev.txt pyproject.toml Pipfile setup.py; do
+    [ -f "$PROJECT_DIR/$f" ] || continue
+    if grep -iqE '(^|["'"'"'[:space:]])(flask|django|fastapi|starlette|quart)([^a-z0-9_-]|$)' \
+         "$PROJECT_DIR/$f" 2>/dev/null; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [ "$STACK" = "python-tools" ]; then
+  if python_web_dep || \
+     file_contains "from flask import" "*.py" || \
+     file_contains "from django" "*.py" || \
+     file_contains "from fastapi import" "*.py"; then
+    add_overlay "python-web"
+  fi
+fi
+
 # --- Scientific computing overlay detection ---
 
 if [ "$STACK" != "unknown" ] && [ "$STACK" != "salesforce" ] && [ "$STACK" != "static-site" ]; then

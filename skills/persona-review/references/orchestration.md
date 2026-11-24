@@ -111,6 +111,8 @@ Base branch: <base-branch>  (diff mode only)
 PR: #<pr-number>            (omit this line if there is no PR, and in snapshot mode)
 Build command: <build_command, or "none for this stack - skip the build step">
 Test command: <test_command, or "none for this stack - skip the test step">
+Run directory: <absolute run-dir path>. Write your findings file here. It is
+outside the repository; writing to it is allowed and expected.
 
 Review scope: <"diff against <base-branch>", or "snapshot: <scope label>">
 Primary scope:              (snapshot mode only)
@@ -156,7 +158,10 @@ whether this code's assumptions about it hold.
 5. Post your review: `gh pr comment <pr-number> --body "<your review>"`.
    If there is no PR line in the header, or the header says
    "PR comments: orchestrator", return the review as your final text instead.
-6. End your response with the FINDINGS block. This is required. The Project
+6. Write your FINDINGS block, verbatim and complete, to
+   `<run-dir>/findings-<persona>.md`: the block only, starting at
+   `### FINDINGS`, with no code fences.
+7. End your response with the same FINDINGS block. This is required. The Project
    Manager cannot act on findings that are not in it.
 
 You are read-only. Do not edit files, do not commit, do not push. Propose every
@@ -183,16 +188,17 @@ One agent, after every reviewer finishes.
 
 ## Reviewer findings
 
-### From IMPLEMENTER
-<that agent's verbatim FINDINGS block>
+Read each of these files in full. Each is one reviewer's verbatim FINDINGS
+block; treat them exactly as if they were pasted here.
 
-### From REVIEWER
-<...>
-
-(one section per reviewer that ran, including any --fable lens)
+- <run-dir>/findings-implementer.md — IMPLEMENTER
+- <run-dir>/findings-reviewer.md — REVIEWER
+- <...one line per reviewer that ran, including any --fable lens>
 
 ### Missing
 <persona names that failed or were not in the rotation>
+
+<the "Other runs' plans" block below — split runs only, omit otherwise>
 
 <the decision ledger, verbatim — omit this whole section in round 1>
 
@@ -203,9 +209,48 @@ One agent, after every reviewer finishes.
    file must share a group.
 4. Post the PR comment if the header has a PR line, then emit the FIX PLAN
    block.
+5. Write the same FIX PLAN block, verbatim, to `<run-dir>/plan.md`: starting
+   at `### FIX PLAN`, through the last item's `evidence` line, no code fences,
+   one field per line.
 
-You are read-only. Do not edit files, do not commit, do not push.
+You are read-only in the repository. Do not edit its files, do not commit, do
+not push. Writing to the run directory is expected.
 ```
+
+Reviewer findings go by file rather than pasted inline. It is the same text,
+but a run of five reviewers produces 80 or more findings, and pasting that
+volume is where transcription mistakes happen. If a findings file is missing,
+paste that reviewer's block from its reply instead and say so in the prompt.
+
+### Other runs' plans
+
+In a split run, every Project Manager after the first gets this block, with
+one path per earlier run:
+
+```
+## Other runs' plans
+
+Other parts of this scope were reviewed in separate runs, and their fix plans
+will be filed as issues before yours. Read each plan:
+
+- <earlier-run-dir>/plan.md — <that run's label>
+
+Before creating an item, check whether one of those plans already owns the
+defect. Two runs see one defect from different sides: a server route and the
+template that links to it, or a header hook and the inline script that blocks
+a stricter policy.
+
+- If an earlier item covers the defect completely, create no item. List it in
+  your summary under "Covered by another run", naming that item's title.
+- If an earlier item covers only part, and says what it left out, create an
+  item for that part alone, scoped to your files. Say in `detail` which
+  earlier item it completes, by title, and that the two should land together.
+- Never widen your scope into the other run's files.
+```
+
+Cross-run duplicates are invisible to the deduplication key, which is built
+from the title: the same defect seen from the template side gets a different
+title. Only the Project Manager can recognise it.
 
 ## Phase 4: Implementer prompts
 
@@ -359,6 +404,11 @@ for its key in the bodies you listed in step 3.
 - **Key absent:** create it.
 
 ### Filing
+
+`scripts/file-plan.py` implements everything in this section and in **Before
+you file**: forge detection, auth, listing, labels, deduplication, the body
+template and the filing order. Use it rather than looping by hand. The rules
+below are what it does, and what to check if it fails.
 
 File `blocking: true` items first, then the rest in fix-plan order, so the
 lowest issue numbers are the ones that matter most. Skip every item marked
