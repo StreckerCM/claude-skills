@@ -259,6 +259,9 @@ def main(argv: list[str]) -> int:
             tracker = GitHub(info["slug"])
         elif info["forge"] == "gitea":
             tracker = Gitea(repo)
+        elif info["forge"] == "unreachable":
+            raise FileError(f"could not reach {info.get('host')} to identify the forge "
+                            f"({info.get('error')}); retry when it is reachable")
         else:
             raise FileError(f"remote host {info.get('host')} is neither GitHub nor Gitea")
 

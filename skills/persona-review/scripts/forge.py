@@ -33,6 +33,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -96,14 +97,26 @@ def detect(repo: str) -> dict:
     result = {"host": host, "owner": owner, "name": name, "slug": f"{owner}/{name}"}
     if host == "github.com":
         return {**result, "forge": "github"}
-    try:
-        status, body = http_json(f"https://{host}/api/v1/version")
-    except (urllib.error.URLError, OSError, ValueError):
-        status, body = 0, None
-    if status == 200 and isinstance(body, dict) and "version" in body:
-        return {**result, "forge": "gitea", "api": f"https://{host}/api/v1",
-                "version": body["version"]}
-    return {**result, "forge": "unknown"}
+    # A self-hosted forge can be briefly unreachable. Retry, and report
+    # "unreachable" separately from "not a Gitea": in a real run a transient
+    # failure here was reported as an unknown forge, which reads as a
+    # configuration problem rather than a network one.
+    last_error = None
+    for attempt in range(3):
+        try:
+            status, body = http_json(f"https://{host}/api/v1/version")
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            last_error = str(exc)
+            time.sleep(1 + attempt)
+            continue
+        if status == 200 and isinstance(body, dict) and "version" in body:
+            return {**result, "forge": "gitea", "api": f"https://{host}/api/v1",
+                    "version": body["version"]}
+        if status in (404, 405) or (status == 200 and not isinstance(body, dict)):
+            return {**result, "forge": "unknown"}
+        last_error = f"HTTP {status}"
+        time.sleep(1 + attempt)
+    return {**result, "forge": "unreachable", "error": last_error}
 
 
 # --- gitea auth -----------------------------------------------------------
