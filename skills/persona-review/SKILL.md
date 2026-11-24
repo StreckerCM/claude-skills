@@ -450,8 +450,18 @@ theirs included, needs `{{REVIEW_SCOPE}}` replaced with the diff-mode or
 snapshot-mode rendering from `references/orchestration.md`.
 
 Collect each agent's `### FINDINGS` block from
-`<run-dir>/findings-<persona>.md`. Use the copy in its reply only if the file
-is missing, and say so. If an agent produced neither, note it and continue.
+`<run-dir>/findings-<persona>.md`. If the file is missing, save the block from
+the agent's reply to that path yourself, marked as saved by the orchestrator.
+If an agent produced neither, note it and continue.
+
+Expect missing files. In a real split run, the harness refused the Write
+tool's report-style files for six of eight reviewers ("subagents should
+return findings as text"), while two writes succeeded. The refusal is a
+deliberate tool policy, so the reviewer template tells agents never to route
+around it with another tool. One reviewer, told the file was required, wrote
+it through PowerShell instead, which is exactly the workaround to rule out.
+The handoff still pays off on the Project Manager side: it reads the saved
+files rather than a pasted wall of findings.
 
 ## Phase 3: Merge into a fix plan
 

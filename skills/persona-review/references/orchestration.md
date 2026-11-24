@@ -160,7 +160,10 @@ whether this code's assumptions about it hold.
    "PR comments: orchestrator", return the review as your final text instead.
 6. Write your FINDINGS block, verbatim and complete, to
    `<run-dir>/findings-<persona>.md`: the block only, starting at
-   `### FINDINGS`, with no code fences.
+   `### FINDINGS`, with no code fences. If the write is refused, do nothing
+   more about it: return the block in your reply and the orchestrator saves
+   it. Never route around a refused write with another tool (Bash,
+   PowerShell, a script).
 7. End your response with the same FINDINGS block. This is required. The Project
    Manager cannot act on findings that are not in it.
 
