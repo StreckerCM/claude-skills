@@ -123,6 +123,27 @@ add_overlay() {
 if has_file_shallow "sfdx-project.json" || has_dir "force-app"; then
   STACK="salesforce"
 
+# Low-code and graph artefacts. These come before the language stacks because
+# their repositories often carry a few helper scripts (a Python generator, a
+# PowerShell packager) that would otherwise classify the whole repository as
+# python-tools or unknown, and review the scripts while ignoring the flows.
+
+# Power Automate / Logic Apps: an unpacked export package keeps flows under
+# Microsoft.Flow/; a solution export or Logic App keeps the definition JSON,
+# recognisable by the workflow-definition schema.
+elif has_dir_anywhere "Microsoft.Flow" || \
+     file_contains "Microsoft.Logic/schemas/.*/workflowdefinition" "*.json"; then
+  STACK="power-automate"
+
+# Power Query (M): .pq query files, or a Power BI project.
+elif has_file "*.pq" || has_file "*.pqm" || has_file "*.pbip" || has_file "*.tmdl"; then
+  STACK="power-query"
+
+# ComfyUI workflows: UI-format graphs carry last_node_id; API-format graphs
+# carry class_type on every node.
+elif file_contains '"last_node_id"' "*.json" || file_contains '"class_type"' "*.json"; then
+  STACK="comfyui"
+
 # .NET projects (check for .sln or .csproj)
 elif has_file "*.sln" || has_file "*.csproj"; then
 
@@ -234,7 +255,15 @@ fi
 
 # --- Scientific computing overlay detection ---
 
-if [ "$STACK" != "unknown" ] && [ "$STACK" != "salesforce" ] && [ "$STACK" != "static-site" ]; then
+# Skipped for the low-code stacks: numpy in a ComfyUI asset generator says
+# nothing about the workflows, and M and flow definitions have no numerics
+# the overlay's criteria fit.
+case "$STACK" in
+  unknown|salesforce|static-site|power-automate|power-query|comfyui) SCI_ELIGIBLE=false ;;
+  *) SCI_ELIGIBLE=true ;;
+esac
+
+if $SCI_ELIGIBLE; then
   SCIENTIFIC=false
 
   # Check for math/science namespaces

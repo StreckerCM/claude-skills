@@ -53,7 +53,8 @@ All are optional.
 | `--no-fix` | Stop after the fix plan. Report only. |
 
 Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
-`static-site`, `salesforce`, `python-tools`.
+`static-site`, `salesforce`, `python-tools`, `comfyui`, `power-automate`,
+`power-query`.
 
 Valid overlays: `scientific-computing`, `entity-framework`, `blazor`,
 `experience-cloud`, and `python-web`. More than one can apply at once. `accessibility` is also

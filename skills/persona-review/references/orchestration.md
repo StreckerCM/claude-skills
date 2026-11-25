@@ -20,7 +20,11 @@ For each reviewer in the rotation:
 1. Read `references/agents/<persona>.md`. Note the `model` field in its
    frontmatter.
 2. From the profile you already loaded, extract that persona's criteria section,
-   such as `## Implementer Criteria`.
+   such as `## Implementer Criteria`. If the profile has a `## Review notes`
+   section, put it first. It says what a reviewer can and cannot run for that
+   stack, and every persona needs it. A reviewer that does not know the code
+   can't be executed offline either fakes `observed` evidence or gives up on
+   probes it could have written.
 3. For each active overlay, extract **two** things. Several overlays can apply
    at once, and they are additive. When `ui-ux-designer` is in the rotation,
    `accessibility.md` is one of them.
