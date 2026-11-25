@@ -238,19 +238,54 @@ def keys_from(issues: list[dict]) -> dict[str, int]:
     return keys
 
 
+def list_existing(repo: str, out: Path) -> int:
+    """Write the tracker's persona-review issues for a Project Manager to check."""
+    try:
+        info = forge_json("detect", repo)
+        if info["forge"] == "github":
+            r = run(["gh", "issue", "list", "--repo", info["slug"], "--label", "persona-review",
+                     "--state", "all", "--limit", "1000", "--json", "number,title,state,body"])
+            if r.returncode != 0:
+                raise FileError(f"gh issue list: {r.stderr.strip()}")
+            issues = json.loads(r.stdout or "[]")
+        elif info["forge"] == "gitea":
+            issues = forge_json("issues", repo, "--label", "persona-review")
+        else:
+            raise FileError(f"cannot list issues: forge is {info['forge']}")
+    except (FileError, OSError) as exc:
+        print(json.dumps({"error": str(exc)}))
+        return 1
+    lines = ["# Issues already filed by earlier persona-review runs",
+             "# number | state | title | files", ""]
+    for i in sorted(issues, key=lambda x: x["number"]):
+        m = re.search(r"\| \*\*Scope\*\* \| (.*?) \|", i.get("body") or "")
+        files = m.group(1).replace("`", "") if m else "?"
+        lines.append(f"#{i['number']} | {str(i.get('state', '')).lower()} | {i['title']} | {files}")
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(json.dumps({"listed": len(issues), "out": str(out)}))
+    return 0
+
+
 # --- main -----------------------------------------------------------------
 
 def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(prog="file-plan.py")
     p.add_argument("--repo", required=True)
-    p.add_argument("--plan", required=True)
-    p.add_argument("--branch", required=True)
-    p.add_argument("--scope", required=True, help="one line: what was reviewed")
+    p.add_argument("--plan")
+    p.add_argument("--branch")
+    p.add_argument("--scope", help="one line: what was reviewed")
     p.add_argument("--date", default=dt.date.today().isoformat())
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--list-existing", metavar="OUT",
+                   help="write every persona-review issue (number, state, title, files) "
+                        "to OUT and exit; files nothing")
     a = p.parse_args(argv)
 
     repo = a.repo.replace("\\", "/")
+    if a.list_existing:
+        return list_existing(repo, Path(a.list_existing.replace("\\", "/")))
+    if not (a.plan and a.branch and a.scope):
+        p.error("--plan, --branch and --scope are required unless --list-existing is given")
     plan_path = Path(a.plan.replace("\\", "/"))
     try:
         items = parse_plan(plan_path.read_text(encoding="utf-8"))

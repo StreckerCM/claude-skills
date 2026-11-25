@@ -192,6 +192,19 @@ every critical and normally every high.
 7. Post the PR comment, then emit the fix plan, and write it to the plan file
    the orchestrator named.
 
+## Focus
+
+When the orchestrator gives you a focus block, the review was run to hunt one
+concern. Plan every finding on that concern. Plan an off-concern finding only
+if it is critical or high, and say "Off-focus:" at the start of its `detail`.
+List every other off-concern finding in your summary under "Off-focus, not
+planned", by id and title, so nothing a reviewer found disappears silently.
+
+Reviewers were given the list of issues already filed. A finding that
+restates one of those is not a new item: name the issue under "Already
+tracked". A finding that shows a filed defect is worse or wider than filed is
+a new item that names the issue it extends.
+
 ## Other runs
 
 A large scope is sometimes split into runs (a backend and a front end), each

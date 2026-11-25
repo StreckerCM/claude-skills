@@ -111,6 +111,10 @@ Base branch: <base-branch>  (diff mode only)
 PR: #<pr-number>            (omit this line if there is no PR, and in snapshot mode)
 Build command: <build_command, or "none for this stack - skip the build step">
 Test command: <test_command, or "none for this stack - skip the test step">
+Test baseline: <the orchestrator's full-suite result on this commit, e.g.
+"1425 passed, 2 skipped". Do not run the full suite yourself; other
+reviewers are running at the same time. Run only targeted test files and
+your own probes.>
 Run directory: <absolute run-dir path>. Write your findings file here. It is
 outside the repository; writing to it is allowed and expected.
 
@@ -153,8 +157,9 @@ whether this code's assumptions about it hold.
 2. Review that code against your criteria above.
 3. Run the build command and confirm the project builds, unless the header
    above says there is none.
-4. Run the test command, unless the header above says there is none.
-   Do not invent a command the header did not give you.
+4. Do not run the full suite; the header gives its baseline result. Run the
+   test files that cover what you are reviewing, using the header's test
+   command with those paths. Do not invent a different command.
 5. Post your review: `gh pr comment <pr-number> --body "<your review>"`.
    If there is no PR line in the header, or the header says
    "PR comments: orchestrator", return the review as your final text instead.
@@ -224,6 +229,34 @@ Reviewer findings go by file rather than pasted inline. It is the same text,
 but a run of five reviewers produces 80 or more findings, and pasting that
 volume is where transcription mistakes happen. If a findings file is missing,
 paste that reviewer's block from its reply instead and say so in the prompt.
+
+### Focus block
+
+With `--focus`, add this block to every reviewer prompt, after the stack
+criteria and overlays and before `## Instructions`:
+
+```
+## Focus: <concern>
+
+This review hunts one concern. Spend your effort on it first; report
+anything else only if it is critical or high.
+
+<the body of each references/focus/<name>.md, frontmatter removed; for a
+ free-text concern, the user's words plus the hotspot list you wrote>
+
+The hotspot map for this scope is at <run-dir>/hotspots.md. Start from it.
+Already tracked: <run-dir>/existing-issues.md lists defects earlier reviews
+filed. Do not re-report one unless you have evidence it is worse than, or
+different from, what was filed; say which issue number you are extending.
+
+In your summary, state the patterns you searched, the hit counts, and which
+hits you read in full.
+```
+
+Give the Project Manager the same block, minus the hotspot paragraph, plus
+this line: "Plan on-concern findings. Plan an off-concern finding only if it
+is critical or high, and mark it off-focus in `detail`. List every other
+off-concern finding in your summary under 'Off-focus, not planned'."
 
 ### Other runs' plans
 

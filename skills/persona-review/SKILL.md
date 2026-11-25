@@ -42,6 +42,7 @@ All are optional.
 | `--base <ref>` | Diff against this ref instead of the detected base branch. |
 | `--path <path>` | Snapshot mode: review this file, directory, or glob as it stands. Repeatable. `--path .` reviews the whole application. |
 | `--feature "<name>"` | Snapshot mode: find the code that implements this feature, class, or symbol, confirm the file list, and review it. |
+| `--focus <concern>` | Review for one concern. A preset name (`data-loss`, `correctness`, `concurrency`, comma-separated to combine) or free text in quotes. |
 | `--stack <stack>` | Skip detection and use this stack. |
 | `--overlay <overlay>` | Add overlay criteria on top of the detected stack. |
 | `--rotation <size>` | Run this many reviewers instead of the profile default. |
@@ -57,6 +58,10 @@ Valid stacks: `dotnet-desktop`, `dotnet-library`, `aspnet-web`, `nodejs-api`,
 Valid overlays: `scientific-computing`, `entity-framework`, `blazor`,
 `experience-cloud`, and `python-web`. More than one can apply at once. `accessibility` is also
 an overlay, but it is loaded from the rotation rather than detected.
+
+`--focus` narrows what the reviewers look for, not where. It combines with
+every scope: a diff, a snapshot, a feature, or `--path .` for the whole
+application. See **Focused reviews** below.
 
 `--path` and `--feature` combine: the paths seed the search for the feature.
 Either one with `--base` is a contradiction, because a diff and a snapshot are
@@ -106,6 +111,8 @@ Print the argument table above, the valid stacks and overlays, then this:
 > /persona-review --path src/Orders    review a directory as it stands
 > /persona-review --feature checkout   find the checkout code and review it
 > /persona-review --path . --no-fix    review the whole application
+> /persona-review --path . --focus data-loss,correctness --issues
+>                                      hunt one concern across the whole app
 > /persona-review --stack salesforce   skip detection
 > /persona-review --fix --rounds 3     review and fix, up to three rounds
 > /persona-review --issues --no-fix    triage and file, change nothing
@@ -270,6 +277,7 @@ Print the argument table above, the valid stacks and overlays, then this:
    Repository: <absolute repo path>
    Branch: <branch>  (base: <base-branch>)
    Forge: <github | gitea | unknown> <owner/name>   PR: #<number, or none>
+   Focus: <presets or "free text">, hotspot map: <N> hits in <M> files   (only with --focus)
    Run dir: <absolute path, outside both repositories>
    Scope: diff against <base-branch>
           or: snapshot of <label>, <N> files, ~<L> lines (+ <C> context files)
@@ -361,6 +369,65 @@ title.
   number. On Gitea use `forge.py comment`; on GitHub, `gh issue comment`.
 - **Report each run separately** in Phase 5, then the cross-run links.
 
+### Focused reviews
+
+`--focus` points every reviewer at one concern: data loss, correctness,
+concurrency, or whatever the user names. Each persona keeps its role and
+looks at the concern from its own angle, so a data-loss review still gets a
+Tester asking what proves the data survives and a Security Auditor asking how
+an attacker could destroy it.
+
+1. **Resolve the concern.** For each comma-separated name, read
+   `references/focus/<name>.md`. Anything that is not a preset name is free
+   text: use it as the concern, and write a short hotspot list for it yourself
+   (the code shapes where that concern lives) before going further. Show the
+   user the list.
+2. **Adjust the rotation.** Drop every persona named in a preset's
+   `skip_personas`, unless the user asked for it. A data-loss hunt has no use
+   for the UI/UX Designer.
+3. **Build the hotspot map** in the run directory:
+
+   Point `--repo` at one of the reviewers' worktrees, not the user's
+   checkout: the script reads files from disk, and the checkout can hold
+   uncommitted edits the reviewers will never see.
+
+   ```bash
+   python ~/.claude/skills/persona-review/scripts/hotspots.py \
+     --repo <a reviewer worktree> --out <run-dir>/hotspots.md \
+     --preset data-loss --preset correctness [--pattern-file <run-dir>/patterns.txt] [--path <scope>]
+   ```
+
+   For a free-text concern, write your hotspot regexes to
+   `<run-dir>/patterns.txt`, one per line with `#` comments, and pass
+   `--pattern-file`. Avoid `--pattern` for anything containing `|`: on
+   Windows, `python` is often a `.bat` shim, and cmd splits the argument at
+   the pipe, which fails before the script even starts.
+
+   Every reviewer gets the same map, so they start from the same index of
+   risky lines rather than each grepping on its own.
+4. **List what is already tracked** when the scope was reviewed before, which
+   is the usual reason to run a focused pass:
+
+   ```bash
+   python ~/.claude/skills/persona-review/scripts/file-plan.py --repo <repo> \
+     --list-existing <run-dir>/existing-issues.md
+   ```
+
+   Give the file to the reviewers as well as the Project Manager. A focused
+   rescan exists to find what earlier reviews missed; reviewers who spend
+   their budget re-proving filed defects find less. Tell them to skip a filed
+   defect unless they have evidence it is worse, or different, than filed.
+5. **The size limit relaxes, honestly.** A focused review reads the hotspots
+   and the functions around them, not every line, so `--path .` over a large
+   application is workable where an unfocused review is not. The reviewers
+   must say which patterns they searched, how many hits there were, and which
+   they read in full. Report that coverage in Phase 5. Above roughly 1,000
+   hits, offer to split the run (see **Split runs**) before launching.
+6. **Inject the focus** into every reviewer and the Project Manager, as
+   `references/orchestration.md` describes under **Focus block**. The Project
+   Manager plans on-concern findings and only critical or high off-concern
+   ones; it lists the rest without planning them.
+
 ## Phase 2: Review, in parallel, read-only
 
 Sub-agents get fresh context and **cannot read this skill's files**. You must
@@ -385,6 +452,12 @@ Launch every reviewer in the rotation concurrently: send them as multiple tool
 calls in one message. With `--fable`, launch the three deep lenses in the same
 message. They must not receive the standard reviewers' findings, because seeing
 that list anchors them to what was already caught.
+
+**Run the full test suite once, yourself, before launching.** Run it in one of
+the worktrees and give every reviewer the result as the baseline. Tell them to
+run only targeted test files and their own probes. In a real split run, eight
+reviewers each ran an 80-second suite at the same time; each run took about
+20 minutes, and one reviewer spent 25 minutes waiting on its own.
 
 **Give every reviewer its own worktree.** Pass `isolation: "worktree"` on each
 Agent call.
